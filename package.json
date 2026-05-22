@@ -1,0 +1,22 @@
+{
+  "name": "asa-projects",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vincenzo-Sanzone/ASA-Projects.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Vincenzo-Sanzone/ASA-Projects/issues"
+  },
+  "homepage": "https://github.com/Vincenzo-Sanzone/ASA-Projects#readme",
+  "dependencies": {
+    "@unitn-asa/deliveroo-js-sdk": "^1.3.5"
+  }
+}
