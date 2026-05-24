@@ -1,0 +1,53 @@
+class Agent {
+    /**
+     * @param {import("@unitn-asa/deliveroo-js-sdk").IOAgent} sensedAgent - The agent data received from sensing.
+     */
+    constructor(sensedAgent) {
+        this.id = sensedAgent.id;
+        this.x = sensedAgent.x;
+        this.y = sensedAgent.y;
+        this.timestampSeen = Date.now();
+    }
+}
+
+class Parcel {
+
+    /**
+     * @param {import("@unitn-asa/deliveroo-js-sdk").IOParcel} sensedParcel - The parcel data received from sensing.
+     */
+    constructor(sensedParcel) {
+        this.id = sensedParcel.id;
+        this.x = sensedParcel.x;
+        this.y = sensedParcel.y;
+        this.reward = sensedParcel.reward;
+        this.carriedBy = sensedParcel.carriedBy;
+        this.timestampSeen = Date.now();
+    }
+}
+
+class Map {
+    /**
+     * @param {import("@unitn-asa/deliveroo-js-sdk/types/IOGameOptions.js").IOMapOptions} maps - The map data received from the server configuration.
+     */
+    constructor(maps) {
+        this.width = maps.width;
+        this.height = maps.height;
+        this.tiles = maps.tiles;
+    }
+}
+
+class GameConfig {
+
+    /**
+     * @param {import("@unitn-asa/deliveroo-js-sdk").IOConfig} settings - The configuration settings from the server.
+     */
+    constructor(settings) {
+        this.clock = settings.CLOCK;
+        this.map = new Map(settings.GAME.map);
+        this.capacity = settings.GAME.player.capacity;
+        this.decayEvent = settings.GAME.parcels.decaying_event;
+        this.generationEvent = settings.GAME.parcels.generation_event;
+    }
+}
+
+export { Agent, Parcel, Map, GameConfig };

@@ -1,0 +1,70 @@
+import { Agent, Parcel, Map, GameConfig } from "../../utility/types.js";
+
+class Belief {
+    constructor() {
+        this.me = null;
+        this.enemies = []; // List of other agents with their id, x, y, timestampSeen
+        this.config = null;
+        this.parcels = []; // List of parcels with their id, position, reward, carriedBy, timestampSeen
+    }
+
+    /**
+     * Update the belief about the agent itself.
+     * @param {import("@unitn-asa/deliveroo-js-sdk").IOAgent} agent 
+     */
+    updateMe ( agent ) {
+        this.me = new Agent(agent);
+    }
+
+    /**
+     * Function to update the belief about parcels based on the sensing data.
+     * @param {import("@unitn-asa/deliveroo-js-sdk").IOParcel[]} parcels - Array of parcels received from sensing data.
+     */
+    updateParcel (parcels) {
+        // For each parcel in the sensing data, check if it already exists in the belief. If it does, update its information; if not, add it to the belief.
+        for (const sensedParcel of parcels) {
+            const existingParcelIndex = this.parcels.findIndex(p => p.id === sensedParcel.id);
+            const parcel = new Parcel(sensedParcel);
+            if (existingParcelIndex !== -1) {
+                // Update existing parcel information
+                this.parcels[existingParcelIndex] = parcel;
+            } else {
+                // Add new parcel
+                this.parcels.push(parcel);
+            }
+        }
+    }
+
+    /**
+     * Update the belief about other agents based on the sensing data.
+     * @param {import("@unitn-asa/deliveroo-js-sdk").IOAgent[]} agents - Array of agents received from sensing data. 
+     */
+    updateAgents (agents) {
+        // Update the belief about other agents based on the sensing data. This can be implemented similarly to the updateParcel function, where we check if an agent already exists in the belief and update its information accordingly.
+        for (const sensedAgent of agents) {
+            // If the sensed agent is the same as "me", update the belief about "me" instead of adding it to the list of enemies.
+            if (sensedAgent.id === this.me.id) {
+                continue;
+            }
+
+            // Check if the agent already exists in the belief. If it does, update its information; if not, add it to the belief.
+            const existingAgentIndex = this.enemies.findIndex(a => a.id === sensedAgent.id);
+            const agent = new Agent(sensedAgent);
+            if (existingAgentIndex !== -1) {
+                // Update existing agent information
+                this.enemies[existingAgentIndex] = agent;
+            } else {
+                // Add new agent
+                this.enemies.push(agent);
+            }
+        }
+    }
+
+
+    updateConfig (config) {
+        // Update the belief about the game configuration based on the configuration information received. This can involve updating properties such as clock, capacity, decayEvent, and generationEvent based on the config data.
+        this.config = new GameConfig(config);
+    }
+}
+
+export { Belief };
