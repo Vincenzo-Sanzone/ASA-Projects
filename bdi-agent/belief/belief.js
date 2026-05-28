@@ -1,4 +1,4 @@
-import { Agent, Parcel, Map, GameConfig } from "../../utility/types.js";
+import { Agent, Parcel, GameConfig } from "../../utility/types.js";
 
 class Belief {
     constructor() {
@@ -33,6 +33,9 @@ class Belief {
                 this.parcels.push(parcel);
             }
         }
+
+        // Delete parcels that have reward 1 and are not seen in the current sensing data, as they are likely to have been decayed and removed from the game. 
+        this.parcels = this.parcels.filter(parcel => parcel.reward !== 1);
     }
 
     /**
