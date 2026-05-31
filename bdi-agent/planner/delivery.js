@@ -1,5 +1,5 @@
 import { Plan, GoToPlan } from "./planner.js";
-import { Logger } from "../../utility/index.js";
+import { Logger, Movement } from "../../utility/index.js";
 
 /**
  * Plan to deliver all carried parcels at a delivery point.
@@ -15,7 +15,9 @@ class DeliverPlan extends Plan {
         return action === 'deliver' && x !== undefined && y !== undefined;
     }
 
-    async execute(x, y) {
+    async execute() {
+        // Calculate the nearest delivery point from my position
+        const {x,y} = Movement.nearestDeliveryPoint(this.intention.beliefs.config?.map, {x: this.intention.beliefs.me?.x, y: this.intention.beliefs.me?.y});
         this.logger.info(`Delivering at (${x}, ${y})`);
         // Step 1: Move to the delivery point
         await new GoToPlan(this.intention, this.socket).execute(x, y);

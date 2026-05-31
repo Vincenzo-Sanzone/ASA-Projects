@@ -24,14 +24,12 @@ class GoToPddl extends Pddl {
         this.beliefset.declare(`agent x${belief.me.x} y${belief.me.y}`);
 
         // Declare the position of the other agents ad walls
-        for (const enemy of belief.enemies) {
-            this.beliefset.declare(`wall x${enemy.x} y${enemy.y}`);
-        }
+        
 
         // Declare the position of the walls and left up tiles
         for (let x=0; x < belief.config.map.width; x++) {
             for (let y=0; y < belief.config.map.height; y++) {
-                if (belief.config.map.tiles[x][y] === '0') {
+                if (belief.config.map.tiles[x][y].toString() === '0') {
                     this.beliefset.declare(`wall x${x} y${y}`);
                 }
 

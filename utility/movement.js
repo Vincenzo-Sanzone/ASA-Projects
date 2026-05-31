@@ -161,6 +161,34 @@ class Movement {
         const distance = this.getDistance(map, start, target);
         return distance !== Infinity;
     }
+
+     /** 
+      * Gives the coordinates of all the delivery points on the map.
+      * @param {GameMap} map - The game map containing the layout of tiles, walls, and directional arrows.
+      * @returns {Array} An array of objects representing the coordinates of the delivery points.
+      */
+    static getDeliveryPoints(map) {
+        return map.tiles
+            .flatMap((row, y) => row.map((v, x) => v?.toString() === '2' ? { x, y } : null))
+            .filter(Boolean);
+    }
+
+    /**
+     * Gets the coordinates of the nearest delivery point to the given coordinates.
+     * @param {GameMap} map - The game map containing the layout of tiles, walls, and directional arrows.
+     * @param {{x: number, y: number}} start - The coordinates of the agent.
+     * @returns {{x: number, y: number, distance: number}} The coordinates of the nearest delivery point and its distance.
+     */
+    static nearestDeliveryPoint(map, start){
+        return this.getDeliveryPoints(map).reduce((nearest, point) => {
+            const distance = this.getDistance(map, start, point);
+            if (!nearest || distance < nearest.distance) {
+                return { distance, x: point.x, y: point.y };
+            }
+            return {...nearest, distance};
+        })
+    }
+
     static invalidateCache() {
         this.#distanceCache.clear();
     }
