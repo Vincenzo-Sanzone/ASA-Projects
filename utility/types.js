@@ -33,14 +33,13 @@ class GameMap {
         this.width = maps.tiles[0].length;
         this.height = maps.tiles.length;
         this.tiles = maps.tiles;
-        //this.printFullMap();
     }
 
     printFullMap(){
         let map = '';
-        for (let x = 0; x < this.width; x++) {
-            for (let y = 0; y < this.height; y++) {
-                map += this.tiles[x][y] + ' ';
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                map += this.tiles[y][x] + ' ';
             }
             map += '\n';
         }

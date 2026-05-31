@@ -25,9 +25,9 @@ class LookForParcelPlan extends Plan {
         const walkableTiles = [];
 
         // Collect all spwan tiles
-        for (let x = 0; x < map.width; x++) {
-            for (let y = 0; y < map.width; y++) {
-                const tile = map.tiles[x][y];
+        for (let y = 0; y < map.height; y++) {
+            for (let x = 0; x < map.width; x++) {
+                const tile = map.tiles[y][x];
                 if (tile.toString() === '1') {
                     walkableTiles.push({ x, y });
                 }

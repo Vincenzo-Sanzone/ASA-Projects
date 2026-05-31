@@ -27,19 +27,19 @@ class GoToPddl extends Pddl {
         
 
         // Declare the position of the walls and left up tiles
-        for (let x=0; x < belief.config.map.width; x++) {
-            for (let y=0; y < belief.config.map.height; y++) {
-                if (belief.config.map.tiles[x][y].toString() === '0') {
+        for (let y=0; y < belief.config.map.height; y++) {
+            for (let x=0; x < belief.config.map.width; x++) {
+                if (belief.config.map.tiles[y][x].toString() === '0') {
                     this.beliefset.declare(`wall x${x} y${y}`);
                 }
 
-                if (x === 0 && y < belief.config.map.height - 1) {
-                    this.beliefset.declare(`up y${y+1} y${y}`);
+                if (y === 0 && x < belief.config.map.width - 1) {
+                    this.beliefset.declare(`left x${x} x${x + 1}`);
                 }
             }
 
-            if (x < belief.config.map.width - 1) {
-                this.beliefset.declare(`left x${x} x${x + 1}`);
+            if (y < belief.config.map.height - 1) {
+                this.beliefset.declare(`up y${y+1} y${y}`);
             }
         }
     }

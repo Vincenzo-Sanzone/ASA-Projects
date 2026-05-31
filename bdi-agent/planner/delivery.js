@@ -29,12 +29,16 @@ class DeliverPlan extends Plan {
         await this.goTo.execute(x, y);
         if (this.stopped) return false;
 
-        this.logger.info(`Delivering all carried parcels`);
         // Deliver all carried parcels, if we are still carrying some and we are on a delivery tile
         if (this.intention.beliefs.parcels.some(p => p.carriedBy === this.intention.beliefs.me.id) && this.intention.beliefs.me.x === x && this.intention.beliefs.me.y === y) {
+            this.logger.info(`Delivering all carried parcels`);
             await this.socket.emitPutdown();
             this.intention.beliefs.removeCarriedParcel();
         }
+        else {
+            this.logger.debug(`We are not on a delivery tile or we are not carrying any parcels, skipping delivery`);
+        }
+
         return true;
     }
 }

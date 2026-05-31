@@ -87,7 +87,7 @@ class Movement {
         }
 
         // Check if start or target are walls
-        if (map.tiles[start.x][start.y] === '0' || map.tiles[target.x][target.y] === '0') {
+        if (map.tiles[start.y][start.x] === '0' || map.tiles[target.y][target.x] === '0') {
             return Infinity;
         }
 
@@ -127,7 +127,7 @@ class Movement {
                     continue;
                 }
 
-                const tile = map.tiles[newX][newY];
+                const tile = map.tiles[newY][newX];
                 // Check if the tile is a wall
                 if (tile.toString() === '0') {
                     continue;
@@ -178,7 +178,7 @@ class Movement {
         }
 
         // Controlla se start o target sono muri
-        if (map.tiles[start.x][start.y] === '0' || map.tiles[target.x][target.y] === '0') {
+        if (map.tiles[start.y][start.x] === '0' || map.tiles[target.y][target.x] === '0') {
             return null;
         }
 
@@ -218,7 +218,7 @@ class Movement {
                     continue;
                 }
 
-                const tile = map.tiles[newX][newY];
+                const tile = map.tiles[newY][newX];
                 // Salta se è un muro
                 if (tile.toString() === '0') {
                     continue;
@@ -262,7 +262,7 @@ class Movement {
      */
     static getDeliveryPoints(map) {
         return map.tiles
-            .flatMap((row, y) => row.map((v, x) => v?.toString() === '2' ? { x, y } : null))
+            .flatMap((row, x) => row.map((v, y) => v?.toString() === '2' ? { x, y } : null))
             .filter(Boolean);
     }
 
