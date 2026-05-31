@@ -72,19 +72,19 @@ class Intentions {
                 await new Promise(res => setImmediate(res));
                 continue;
             }
-            this.logger.log("Next intention:", intention.predicate);
+            this.logger.debug("Next intention:", intention.predicate);
             // 2. Check if the intention is still valid.
             if (!this.isValid(intention)) {
-                this.logger.log("Intention no longer valid:", intention.predicate);
+                this.logger.debug("Intention no longer valid:", intention.predicate);
                 continue;
             }
 
             // 3. Execute the intention.
             this.currentIntention = intention;
             try {
-                this.logger.log("Executing intention:", intention.predicate);
+                this.logger.info("Executing intention:", intention.predicate);
                 await intention.achieve();
-                this.logger.log("Intention completed:", intention.predicate);
+                this.logger.info("Intention completed:", intention.predicate);
             } catch (error) {
                 this.logger.error("Intention failed:", intention.predicate, error);
             } finally {

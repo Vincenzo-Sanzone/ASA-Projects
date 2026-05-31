@@ -1,12 +1,23 @@
 import { Plan, GoToPlan } from "./planner.js";
-
+import { Logger } from "../../utility/index.js";
 /**
  * Plan to look for new parcels by moving to a random walkable tile.
  * Useful when no parcels are visible.
  */
 class LookForParcelPlan extends Plan {
+    constructor(intention, socket) {
+        super(intention, socket);
+        this.goTo = new GoToPlan(this.intention, this.socket);
+        this.logger = new Logger("LookForParcelPlan:");
+    }
+
     static isApplicable(action) {
         return action === 'lookForParcel';
+    }
+
+    stop() {
+        super.stop();
+        this.goTo.stop();
     }
 
     async execute() {
@@ -24,7 +35,7 @@ class LookForParcelPlan extends Plan {
         }
 
         if (walkableTiles.length === 0) {
-            console.error("No walkable tiles found!");
+            this.logger.error("No walkable tiles found!");
             return false;
         }
 
@@ -32,9 +43,9 @@ class LookForParcelPlan extends Plan {
         const randomIndex = Math.floor(Math.random() * walkableTiles.length);
         const { x, y } = walkableTiles[randomIndex];
         
-        console.log(`Moving to random spawn tile: (${x}, ${y})`);
+        this.logger.info(`Moving to random spawn tile: (${x}, ${y})`);
         // Move to the random tile
-        await new GoToPlan(this.intention, this.socket).execute(x, y);
+        await this.goTo.execute(x, y);
         return !this.stopped;
     }
 }

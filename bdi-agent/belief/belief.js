@@ -7,7 +7,7 @@ class Belief {
         this.enemies = []; // List of other agents with their id, x, y, timestampSeen
         this.config = null;
         this.parcels = []; // List of parcels with their id, position, reward, carriedBy, timestampSeen
-
+        
         this.logger = new Logger("Belief:");
     }
 
@@ -17,7 +17,7 @@ class Belief {
      */
     updateMe ( agent ) {
         this.me = new Agent(agent);
-        this.logger.debug(`updated agent information. New position ${this.me.x}, ${this.me.y}`);
+        this.logger.debug(`Now i am at ${this.me.x}, ${this.me.y}`);
     }
 
     /**
@@ -40,8 +40,13 @@ class Belief {
 
         // Delete parcels that have reward 1 and are not seen in the current sensing data, as they are likely to have been decayed and removed from the game. 
         this.parcels = this.parcels.filter(parcel => parcel.reward !== 1);
+    }
 
-        this.logger.debug(`updated parcel information. New parcels: ${this.parcels.length}, ${this.parcels.map(p => {p.id, p.x, p.y})}`);
+    /**
+     * Function to remove all parcels that are currently being carried by the agent.
+     */
+    removeCarriedParcel() {
+        this.parcels = this.parcels.filter(parcel => parcel.carriedBy !== this.me.id);
     }
 
     /**
@@ -67,8 +72,6 @@ class Belief {
                 this.enemies.push(agent);
             }
         }
-
-        this.logger.debug(`updated agent information. New enemies: ${this.enemies.length}, ${this.enemies.map(a => {a.id, a.x, a.y})}`);
     }
 
 

@@ -1,7 +1,7 @@
 import { DjsClientSocket } from "@unitn-asa/deliveroo-js-sdk";
 import { IntentionDeliberation } from "../intention/deliberation.js";
 import { GoToPddl } from "../../pddl/go-to.js";
-import { Logger } from "../../utility/index.js";
+import { Logger, Movement } from "../../utility/index.js";
 /**
  * Planner class: Finds and manages plans to achieve intentions.
  * Uses a library of plan classes (e.g., GoToPlan, PickUpPlan) to match intentions to actions.
@@ -86,7 +86,7 @@ class Plan {
     /**
      * Stops the plan.
      */
-    stop() {this.stopped = true;}
+    stop() { this.stopped = true; }
 }
 
 /**
@@ -104,9 +104,9 @@ class GoToPlan extends Plan {
     }
 
     async execute(x, y) {
-        this.logger.info(`Moving to (${x}, ${y})`);
+        this.logger.debug(`Moving to (${x}, ${y})`);
         const { beliefs } = this.intention;
-        
+
         const startX = beliefs.me.x;
         const startY = beliefs.me.y;
 
@@ -114,19 +114,43 @@ class GoToPlan extends Plan {
         if (startX === x && startY === y) {
             return true;
         }
-        
-        this.logger.info(`Adding information to the PDDL to solve move from ${startX},${startY} to ${x},${y}`)
-        const goToPddl = new GoToPddl(this.socket);
-        await goToPddl.addBelief(beliefs);
-        await goToPddl.addGoal({ x, y });
-        const plan = await goToPddl.solve();
-        if (!plan) {
-            this.logger.error(`No plan found to go to (${x}, ${y})`);
-            return false;
-        }
 
-        this.logger.info("Executing plan")
-        await goToPddl.executePlan(plan);
+        const distance = Movement.getDistance(beliefs.config?.map, { x: startX, y: startY }, { x, y });
+        if (distance <= 3) {
+            this.logger.debug(`Close enough to (${x}, ${y}), using direct move`);
+            const moves = Movement.getPathAsFormattedCoordinates(beliefs.config?.map, { x: startX, y: startY }, { x, y });
+            const movement = new Movement(this.socket);
+            let startXAsString = 'x' + startX.toString();
+            let startYAsString = 'y' + startY.toString();
+            for (const move of moves) {
+                const [x, y] = move.split(' ');
+                //Get start x and y as string
+
+                if (startXAsString === x && startYAsString === y) {
+                    continue;
+                }
+                await movement.moveTo({ x: startXAsString, y: startYAsString }, { x, y });
+                if(this.stopped) return false;
+                startXAsString = x;
+                startYAsString = y;
+            }
+        }
+        else {
+            this.logger.info(`Adding information to the PDDL to solve move from ${startX},${startY} to ${x},${y}`)
+            const goToPddl = new GoToPddl(this.socket);
+            await goToPddl.addBelief(beliefs);
+            await goToPddl.addGoal({ x, y });
+            if (this.stopped) return false;
+            const plan = await goToPddl.solve();
+            if (!plan) {
+                this.logger.error(`No plan found to go to (${x}, ${y})`);
+                return false;
+            }
+
+            if(this.stopped) return false; 
+            this.logger.info("Executing plan");
+            await goToPddl.executePlan(plan);
+        } 
         return !this.stopped;
     }
 }

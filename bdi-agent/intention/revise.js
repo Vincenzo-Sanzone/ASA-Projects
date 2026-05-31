@@ -17,19 +17,37 @@ class IntentionsRevise extends Intentions {
      * @param {Array} desires - The desires to convert into intentions (e.g., [{ type: 'pickup', parcelId: 'p1', priority: 5 }]).
      */
     addIntentions(desires) {
-        this.queue = desires.map(d => new IntentionDeliberation(d, this.beliefs, this.planner));        
+        this.queue = desires.map(d => new IntentionDeliberation(d, this.beliefs, this.planner));
+        this._revisePriorities();
     }
 
     /**
-     * Re-sorts the queue based on the latest priorities.
+     * Checks if the highest priority intention has changed and re-prioritizes the queue.
      */
-    _recalculatePriorities() {
-        this.logger.info("Recalculating priorities...");
-        this.queue.sort((a, b) => b.desire.priority - a.desire.priority);
-    }
+    _revisePriorities() {
+        const newIntention = this.queue[0].desire;
+
+        // Check if the intention is the same
+        if (newIntention.type === this.currentIntention?.desire.type && newIntention.type === 'pickup' && newIntention.parcelId === this.currentIntention?.desire.parcelId) {
+            return;
+        }
+        else if (newIntention.type === this.currentIntention?.desire.type && newIntention.type !== 'pickup') {
+            return;
+        }
+
+        if (newIntention.priority > this.currentIntention?.desire.priority) {
+            this.logger.debug("New highest priority:", newIntention.type, newIntention.priority);
+            this.currentIntention?.stop();
+        }
+    }  
 
     getNextIntention() {
-        return this.queue.shift();
+        const intention = this.queue.shift();
+        if (intention && this.isValid(intention)) {
+            this.logger.debug("Next intention:", intention.predicate);
+            this.logger.debug("Other intentions:", this.queue.map(i => i.predicate));
+        }
+        return intention;
     }
 
     /**
@@ -40,19 +58,19 @@ class IntentionsRevise extends Intentions {
         const isReachable = true;
         // If the intention is not reachable, it's not valid.
         if (!isReachable) {
-            this.logger.log("Intention not reachable:", intention.predicate);
+            this.logger.warn("Intention not reachable:", intention.predicate);
             return false;
         }
 
         // Example: Check if the parcel still exists and is not carried.
         if (intention.desire.type === 'pickup') {
             const parcel = this.beliefs.parcels.find(p => p.id === intention.desire.parcelId);
-            this.logger.log("Parcel still exists and is not carried:", parcel && !parcel.carriedBy);
+            this.logger.debug("Parcel still exists and is not carried:", parcel && !parcel.carriedBy);
             return parcel && !parcel.carriedBy;
         }
         // Check if we are still carrying some parcels.
         if (intention.desire.type === 'deliver') {
-            this.logger.log("We are still carrying some parcels:", this.beliefs.parcels.some(p => p.carriedBy === this.beliefs.me.id));
+            this.logger.debug("We are still carrying some parcels:", this.beliefs.parcels.some(p => p.carriedBy === this.beliefs.me.id));
             return this.beliefs.parcels.some(p => p.carriedBy === this.beliefs.me.id);
         }
         return true;

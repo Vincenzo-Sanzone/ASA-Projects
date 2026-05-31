@@ -62,6 +62,7 @@ class GameConfig {
         this.generationEvent = settings.GAME.parcels.generation_event;
         this.average = settings.GAME.parcels.reward_avg;
         this.variance = settings.GAME.parcels.reward_variance;
+        this.observationDistance = settings.GAME.player.observation_distance; 
     }
 }
 

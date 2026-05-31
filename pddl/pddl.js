@@ -59,7 +59,7 @@ class Pddl {
             throw new Error("Domain and problem must be loaded before solving.");
         }
         try {
-            this.logger.info("Solving PDDL problem...");
+            this.logger.debug("Solving PDDL problem...");
             const plan = await onlineSolver(this.domain, this.problem);
             this.logger.info("Plan found");
             return plan;
@@ -74,7 +74,6 @@ class Pddl {
      * @param {Array} plan - The plan to execute, as returned by the solver.
      */
     async executePlan(plan) {
-        this.logger.info("Executing plan...");
         await this.executor.exec(plan)
     }
 

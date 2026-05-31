@@ -8,6 +8,7 @@ import { Logger } from "../../utility/index.js";
 class PickUpPlan extends Plan {
     constructor(intention, socket) {
         super(intention, socket);
+        this.goTo = new GoToPlan(this.intention, this.socket);
         this.logger = new Logger("PickUpPlan:");
     }
 
@@ -15,11 +16,16 @@ class PickUpPlan extends Plan {
         return action === 'pickup' && id !== undefined;
     }
 
+    stop() {
+        super.stop();
+        this.goTo.stop();
+    }
+
     async execute(id) {
         const { x, y, reward } = this.intention.beliefs.parcels.filter(p => p.id === id)[0];
-        this.logger.info(`Picking up parcel ${id} at (${x}, ${y}) with reward ${reward}`);
+        this.logger.debug(`Picking up parcel ${id} at (${x}, ${y}) with reward ${reward}`);
         // Step 1: Move to the parcel
-        await new GoToPlan(this.intention, this.socket).execute(x, y);
+        await this.goTo.execute(x, y);
         if (this.stopped) return false;
 
         this.logger.info(`Emitting pickup parcel ${id}`);

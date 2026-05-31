@@ -49,7 +49,7 @@ class IntentionDeliberation {
 
         // 2. Execute the plan.
         try {
-            this.logger.info(`Executing plan for intention: ${this.predicate.join(', ')}`);
+            this.logger.debug(`Executing plan for intention: ${this.predicate.join(', ')}`);
             const result = await this.plan.execute(...this.predicate.slice(1));
             return result;
         } catch (error) {
@@ -64,6 +64,7 @@ class IntentionDeliberation {
     stop() {
         this.stopped = true;
         if (this.plan?.stop) {
+            this.logger.debug(`Stopping plan for intention: ${this.predicate.join(', ')}`);
             this.plan.stop();
         }
     }

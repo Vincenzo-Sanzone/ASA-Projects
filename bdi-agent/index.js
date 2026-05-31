@@ -7,6 +7,29 @@ import { IntentionsRevise } from "./intention/revise.js";
 import { Planner } from "./planner/planner.js";
 import { PickUpPlan, LookForParcelPlan, DeliverPlan } from "./planner/index.js";
 
+
+// Salva il metodo originale
+const originalConsoleLog = console.log;
+
+// Sovrascrivi console.log
+console.log = (...args) => {
+  // Controlla se il primo argomento è un log "tuo" (ha il formato atteso)
+  const firstArg = args[0];
+  if (
+    typeof firstArg === 'string' &&
+    firstArg.includes('[') && // Contiene le parentesi del timestamp/level
+    firstArg.includes(']') &&
+    (firstArg.includes('[DEBUG]') ||
+     firstArg.includes('[INFO]') ||
+     firstArg.includes('[WARN]') ||
+     firstArg.includes('[ERROR]'))
+  ) {
+    // Mostra solo i tuoi log
+    originalConsoleLog(...args);
+  }
+  // Ignora tutto il resto (log delle librerie)
+};
+
 const socket = DjsConnect(process.env.HOST, process.env.TOKEN);
 const belief = new Belief();
 const desires = new Desires();
@@ -23,7 +46,7 @@ socket.onSensing((sensing) => {
     intentions.addIntentions(desires.desires);
 });
 
-socket.onYou((me) => {belief.updateMe(me); desires.generateDesires(belief); });
+socket.onYou((me) => {belief.updateMe(me); });
 
 socket.onConfig((config) => {belief.updateConfig(config); desires.generateDesires(belief); });
 
