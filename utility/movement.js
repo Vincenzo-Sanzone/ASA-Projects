@@ -1,5 +1,5 @@
 import { DjsClientSocket } from "@unitn-asa/deliveroo-js-sdk";
-import { GameMap } from "./index.js";
+import { GameMap, Logger } from "./index.js";
 
 class Movement {
     static #distanceCache = new Map();
@@ -10,13 +10,54 @@ class Movement {
      */
     constructor(socket) {
         this.socket = socket;
+        this.logger = new Logger("Movement:") 
     }
 
     /**
-     * @param { {x: number, y:number} } start - Starting position of the agent.
-     * @param { {x: number, y:number} } target - Target position to move to.
+     * @param { {x: string, y:string} } start - Starting position of the agent.
+     * @param { {x: string, y:string} } target - Target position to move to.
      */
     async moveTo(start, target) {
+        const xStart = parseInt(start.x.toLowerCase().replace("x", ""));
+        const yStart = parseInt(start.y.toLowerCase().replace("y", ""));
+        const xTarget = parseInt(target.x.toLowerCase().replace("x", ""));
+        const yTarget = parseInt(target.y.toLowerCase().replace("y", ""));
+
+        this.logger.info(`Moving from (x:${xStart}, y:${yStart}) to (x:${xTarget}, y:${yTarget})`);
+
+        // Check if the start and target positions are the same
+        if (xStart === xTarget && yStart === yTarget ) {
+            this.logger.debug("Start and target positions are the same")
+            return;
+        }
+
+        var waitForCompleteMove = new Promise( res => this.socket.onYou( m => m.x % 1 != 0 || m.y % 1 != 0 ? null : res() ) );
+
+        let move = ""
+        // Check if we have to move left
+        if (xTarget < xStart) {
+            this.logger.debug("Choosing left move")
+            move = "left";
+        }
+        // Check if we have to move right
+        if (xTarget > xStart) {
+            this.logger.debug("Choosing right move")
+            move = "right";
+        }
+        // Check if we have to move up
+        if (yTarget > yStart) {
+            this.logger.debug("Choosing up move")
+            move = "up";
+        }
+        // Check if we have to move down
+        if (yTarget < yStart) {
+            this.logger.debug("Choosing down move")
+            move = "down";
+        }
+        
+        await this.socket.emitMove(move);
+
+        await waitForCompleteMove
     }
 
     /**
@@ -27,6 +68,9 @@ class Movement {
      * @returns {number} Shortest distance (in terms of number of steps) or `Infinity` if not reachable.
      */
     static getDistance(map, start, target) {
+        if (start.x % 1 != 0 || start.y % 1 != 0 || target.x % 1 != 0 || target.y % 1 != 0) {
+            return Infinity;
+        }
         const height = map.height;
         const width = map.width;
         const cacheKey = `${start.x},${start.y}-${target.x},${target.y}`;
@@ -41,9 +85,9 @@ class Movement {
         ) {
             return Infinity;
         }
-
+        
         // Check if start or target are walls
-        if (map.tiles[start.y][start.x] === '0' || map.tiles[target.y][target.x] === '0') {
+        if (map.tiles[start.x][start.y] === '0' || map.tiles[target.x][target.y] === '0') {
             return Infinity;
         }
 
@@ -83,7 +127,7 @@ class Movement {
                     continue;
                 }
 
-                const tile = map.tiles[newY][newX];
+                const tile = map.tiles[newX][newY];
                 // Check if the tile is a wall
                 if (tile.toString() === '0') {
                     continue;
@@ -105,6 +149,18 @@ class Movement {
         return Infinity;
     }
 
+    /**
+     * Calculates the shortest distance (in terms of number of steps) between two points on the map, taking into account walls and directional arrows.
+     * @param {GameMap} map - The game map containing the layout of tiles, walls, and directional arrows.
+     * @param { {x: number, y:number} } start - Starting coordinates of the agent.
+     * @param { {x: number, y:number} } target - Target coordinates to move to.
+     * @returns {boolean} `true` if reachable, `false` otherwise.
+     */
+    static isReachable(map, start, target) {
+        // This method can be a simple wrapper around getDistance to check if the distance is finite.
+        const distance = this.getDistance(map, start, target);
+        return distance !== Infinity;
+    }
     static invalidateCache() {
         this.#distanceCache.clear();
     }

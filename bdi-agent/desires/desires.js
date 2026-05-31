@@ -1,10 +1,11 @@
 import { Belief } from "../belief/belief.js";
-import { Movement, Parcel } from "../../utility/index.js";
+import { Movement, Parcel, Logger } from "../../utility/index.js";
 
 //TODO fix the priority so it becames more balanced
 class Desires {
     constructor() {
         this.desires = [];
+        this.logger = new Logger("Desires:");
     }
 
     /**
@@ -24,10 +25,10 @@ class Desires {
 
         // Generate delivery desires for parcels that are currently being carried by the agent.
         const carriedParcels = belief.parcels.filter(parcel => parcel.carriedBy === belief.me.id);
-        this.desires.push({ type: 'deliver', priority: this.calculateDeliveryPriority(carriedParcels, belief) });
+        this.desires.push({ type: 'deliver', priority: 0 });
 
         // Generate look for parcel desires. Low priority, so it is done only if there are no pickup or delivery desires, and it is useful to update the belief about parcels that may have changed since the last sensing.
-        this.desires.push({ type: 'lookForParcel', priority: this.calculateLookForParcelPriority(belief) });
+        this.desires.push({ type: 'lookForParcel', priority: -1 });
 
         // Delete desires with non-positive priority, as they are not worth pursuing.
         this.desires = this.desires.filter(desire => desire.priority > 0);
@@ -35,7 +36,7 @@ class Desires {
         // Sort desires by priority in descending order, so that the most important desires are pursued first.
         this.desires.sort((a, b) => b.priority - a.priority);
 
-        console.log("Generated desires:", this.desires);
+        this.logger.debug(`Generated desires: ${this.desires.map(d => d.type).join(", ")}`);
     }
 
     /**
@@ -46,62 +47,41 @@ class Desires {
      * @returns {number} Priority score (higher = better, no cap).
      */
     calculatePickUpPriority(parcel, belief) {
-        const carryingParcels = belief.parcels.filter(p => p.carriedBy === belief.me?.id).length;
-        const howManyCanICarry = belief.config?.capacity ? belief.config.capacity - carryingParcels : Infinity;
+        const carrying = belief.parcels.filter(p => p.carriedBy === belief.me?.id).length;
+        const canCarry = belief.config?.capacity
+            ? belief.config.capacity - carrying
+            : Infinity;
 
-        // Cannot pick up if at full capacity
-        if (howManyCanICarry <= 0) {
-            return -1;
-        }
+        if (canCarry <= 0) return -1;
 
-        const distance = Movement.getDistance(
-            belief.config.map,
-            { x: belief.me.x, y: belief.me.y },
-            { x: parcel.x, y: parcel.y }
+        const me = { x: belief.me.x, y: belief.me.y };
+
+        // Distanza da me al pacco
+        const distToParcel = Movement.getDistance(belief.config.map, me, { x: parcel.x, y: parcel.y });
+        if (distToParcel === Infinity) return -1;
+
+        // Distanza dal pacco al punto di consegna più vicino
+        const deliveryPoints = this.getDeliveryPoints(belief.config.map);
+        if (deliveryPoints.length === 0) return -1;
+        const distToDelivery = Math.min(
+            ...deliveryPoints.map(dp =>
+                Movement.getDistance(belief.config.map, { x: parcel.x, y: parcel.y }, dp)
+            )
+        );
+        if (distToDelivery === Infinity) return -1;
+
+        // Stima del reward quando CONSEGNO (viaggio completo)
+        const totalSteps = distToParcel + distToDelivery;
+        const decayTimeMs = this.clockEventToMs(belief.config?.decayEvent);
+        const rewardOnDeliver = this.estimateRewardAfterSteps(
+            parcel.reward, totalSteps, belief.config.clock, decayTimeMs
         );
 
-        if (distance === 0) {
-            return Infinity; // Already on the parcel
-        }
+        // Se il pacco decadrà completamente prima che riesca a consegnarlo, inutile raccoglierlo
+        if (rewardOnDeliver <= 0) return -1;
 
-        // === BASE PRIORITY: reward / distance (scaled by 10) ===
-        let priority = (parcel.reward / (distance + 1)) * 10;
-
-        // === BONUS: Nearby parcels (pick up multiple in one trip) ===
-        const nearbyParcels = belief.parcels.filter(p =>
-            p.carriedBy === null &&
-            Movement.getDistance(belief.config.map, { x: p.x, y: p.y }, { x: parcel.x, y: parcel.y }) <= 2
-        ).length - 1; // Exclude self
-        priority += nearbyParcels * 0.5; // +0.5 per nearby parcel
-
-        // === BONUS: Close to delivery point (faster delivery = higher priority) ===
-        const deliveryPoints = belief.config?.map.tiles.flatMap((row, y) =>
-            row.map((value, x) => (value.toString() === '2' ? { x, y } : null))
-        ).filter(dp => dp !== null) || [];
-
-        if (deliveryPoints.length > 0) {
-            const nearestDelivery = deliveryPoints.reduce((nearest, dp) => {
-                const dist = Movement.getDistance(belief.config.map, { x: parcel.x, y: parcel.y }, dp);
-                const nearestDist = Movement.getDistance(belief.config.map, { x: parcel.x, y: parcel.y }, nearest);
-                return dist < nearestDist ? dp : nearest;
-            }, deliveryPoints[0]);
-
-            const distanceToDelivery = Movement.getDistance(
-                belief.config.map,
-                { x: parcel.x, y: parcel.y },
-                nearestDelivery
-            );
-            // Closer to delivery = higher priority
-            priority += (1 / (distanceToDelivery + 1)) * 2; // Max +2 if adjacent to delivery
-        }
-
-        // === BONUS: Fast decay (parcels about to expire) ===
-        const decayTimeMs = this.clockEventToMs(belief.config?.decayEvent);
-        if (decayTimeMs !== Infinity && decayTimeMs > 0) {
-            priority += (parcel.reward * 0.1) / decayTimeMs; // +0.1 per reward per second of decay
-        }
-
-        return priority;
+        // Valore per passo (unità comune con delivery e lookForParcel)
+        return rewardOnDeliver / (totalSteps + 1);
     }
 
     /**
@@ -111,56 +91,38 @@ class Desires {
      * @returns 
      */
     calculateDeliveryPriority(parcels, belief) {
-        const howManyCanICarry = belief.config?.capacity ? belief.config.capacity - parcels.length : Infinity;
-        if (parcels.length === 0) {
-            return -1;
-        }
+        if (parcels.length === 0) return -1;
 
-        // Maximum priority if already on a delivery point
-        if (belief.config?.map.tiles[belief.me.y][belief.me.x]?.toString() === '2') {
-            return Infinity;
-        }
+        const deliveryPoints = this.getDeliveryPoints(belief.config.map);
+        if (deliveryPoints.length === 0) return -1;
 
-        // Maximum priority if at full capacity (must deliver to pick up more)
-        if (howManyCanICarry <= 0) {
-            return Infinity;
-        }
+        // Già su un punto di consegna → priorità massima
+        if (belief.config.map.tiles[belief.me.y]?.[belief.me.x]?.toString() === '2') return 999;
 
-        // Find the nearest delivery point to the player
-        const deliveryPoints = belief.config?.map.tiles.flatMap((row, y) =>
-            row.map((value, x) => (value.toString() === '2' ? { x, y } : null))
-        ).filter(dp => dp !== null) || [];
+        // Capacità piena → devo consegnare per forza
+        const carrying = parcels.length;
+        const canCarry = belief.config?.capacity ? belief.config.capacity - carrying : Infinity;
+        if (canCarry <= 0) return 999;
 
-        if (deliveryPoints.length === 0) {
-            return -1;
-        }
+        // Punto di consegna più vicino a me
+        const distToDelivery = Math.min(
+            ...deliveryPoints.map(dp =>
+                Movement.getDistance(belief.config.map, { x: belief.me.x, y: belief.me.y }, dp)
+            )
+        );
+        if (distToDelivery === Infinity) return -1;
 
-        let nearest = { x: -1, y: -1, distance: Infinity };
-        for (const dp of deliveryPoints) {
-            const distance = Movement.getDistance(
-                belief.config.map,
-                { x: belief.me.x, y: belief.me.y },
-                dp
-            );
-            if (distance < nearest.distance) {
-                nearest = { x: dp.x, y: dp.y, distance };
-            }
-        }
+        // Reward totale stimato al momento della consegna (ogni pacco può decadere)
+        const decayTimeMs = this.clockEventToMs(belief.config?.decayEvent);
+        const totalReward = parcels.reduce(
+            (sum, p) => sum + this.estimateRewardAfterSteps(p.reward, distToDelivery, belief.config.clock, decayTimeMs),
+            0
+        );
+        if (totalReward <= 0) return -1;
 
-        if (nearest.distance === Infinity) {
-            return -1;
-        }
-
-        // === BASE PRIORITY: (total reward * number of parcels) / distance ===
-        const totalReward = parcels.reduce((total, parcel) => total + parcel.reward, 0);
-        let priority = totalReward * belief.config?.clock.valueOf() - (nearest.distance * 2); // Penalize distance, but reward more for higher total reward
-
-        // === BONUS: Carrying multiple parcels (deliver sooner for higher efficiency) ===
-        if (parcels.length > 1) {
-            priority += 5; // Flat bonus for carrying multiple
-        }
-
-        return priority;
+        // Valore per passo + piccolo bonus efficienza per più pacchi (stesso viaggio)
+        const multiBonus = parcels.length > 1 ? parcels.length * 0.3 : 0;
+        return (totalReward / (distToDelivery + 1)) + multiBonus;
     }
 
 
@@ -169,51 +131,38 @@ class Desires {
      * @param {Belief} belief 
      */
     calculateLookForParcelPriority(belief) {
-        const carriedParcels = belief.parcels.filter(parcel => parcel.carriedBy === belief.me?.id);
-        const howManyCanICarry = belief.config?.capacity ? belief.config.capacity - carriedParcels.length : Infinity;
-        // If we are carryng all the parcels we can, then we should not look for new parcels.
-        if (howManyCanICarry <= 0) {
-            return -1;
-        }
+        const carrying = belief.parcels.filter(p => p.carriedBy === belief.me?.id).length;
+        const canCarry = belief.config?.capacity ? belief.config.capacity - carrying : Infinity;
+        if (canCarry <= 0 || !belief.config) return -1;
 
-        if (!belief.config) {
-            return -1; // No config, cannot calculate priority
-        }
         const { decayEvent, generationEvent, variance, average, maxParcels } = belief.config;
-        const visibleParcels = belief.parcels.length;;
 
-        // Convert in seconds.
+        // Solo i pacchi a terra (non trasportati) sono "visibili" ai fini dell'esplorazione
+        const visibleFree = belief.parcels.filter(p => p.carriedBy === null).length;
+        const hiddenParcels = Math.max(0, maxParcels - visibleFree);
+        if (hiddenParcels === 0) return -1;
+
         const decayTimeSec = this.clockEventToMs(decayEvent) / 1000;
-        const generationTimeSec = this.clockEventToMs(generationEvent) / 1000;
+        const genTimeSec = this.clockEventToMs(generationEvent) / 1000;
 
-        // Average lifetime of a parcel in seconds, based on the decay time. This is an estimate of how long parcels last before they decay and disappear from the game.
-        const lifetimeSec = average * decayTimeSec;
+        // Probabilità che un pacco nascosto sia ancora vivo quando lo trovo
+        const lifetime = average * decayTimeSec; // secondi di vita medi
+        const usefulProb = Math.min(1, lifetime / genTimeSec);
 
-        // Expected number of parcels that are currently hidden.
-        const expectedHiddenParcels = Math.max(0, maxParcels - visibleParcels);
+        // Stima distanza media per trovare un pacco nascosto:
+        // approssimiamo con sqrt(celle_camminabili / maxParcels)
+        const walkableTiles = belief.config.map.tiles
+            .flat().filter(t => t.toString() !== '0').length;
+        const expectedExploreSteps = Math.sqrt(walkableTiles / (maxParcels + 1));
 
-        // Probability that an hidden parcel is still available by the time we find it, based on its expected lifetime and the generation time.
-        const usefulnessProbability = Math.min(1, lifetimeSec / generationTimeSec);
+        // Valore atteso per passo (stessa unità di pickup e delivery)
+        const expectedReward = hiddenParcels * average * usefulProb;
+        const priority = expectedReward / (expectedExploreSteps + 1);
 
-        // Base priority is the expected number of parcels we can find multiplied by the average reward and the probability that looking for parcels will be useful.
-        let priority = expectedHiddenParcels * average * usefulnessProbability;
-
-        // Bonus if there aren't many visible parcels.
-        if (visibleParcels === 0) {
-            priority *= 1.5;
-        }
-
-        // Penality if the parcels generation time is long, as it means that new parcels appear rarely and looking for them is less useful.
-        if (generationTimeSec > 5) { // Se generazione > 5s
-            priority *= 0.8;
-        }
-
-        // Bonus high variance
-        priority += variance / 50;
-
-        return priority
+        // Piccolo boost per alta varianza (chance di trovare pacchi molto preziosi)
+        return priority + variance / 200;
     }
-    
+
     /**
      * Converte un IOClockEvent in millisecondi.
      * @param {import("@unitn-asa/deliveroo-js-sdk").IOClockEvent | undefined} event - Es: '1s', 'frame', 'infinite'
@@ -229,6 +178,25 @@ class Desires {
             case 'infinite': return Infinity;
             default: return Infinity; // Valore sconosciuto
         }
+    }
+
+    // ─── Helper condivisi ────────────────────────────────────────────────
+
+    /**
+     * Stima il reward di un pacco dopo `steps` passi, considerando il decay.
+     * Ogni passo impiega `clockMs` ms; il reward cala di 1 ogni `decayTimeMs`.
+     */
+    estimateRewardAfterSteps(reward, steps, clockMs, decayTimeMs) {
+        if (decayTimeMs === Infinity || decayTimeMs === 0) return reward;
+        const elapsed = steps * clockMs;
+        return Math.max(0, reward - elapsed / decayTimeMs);
+    }
+
+    /** Restituisce tutte le celle di consegna della mappa. */
+    getDeliveryPoints(map) {
+        return map.tiles
+            .flatMap((row, y) => row.map((v, x) => v?.toString() === '2' ? { x, y } : null))
+            .filter(Boolean);
     }
 }
 

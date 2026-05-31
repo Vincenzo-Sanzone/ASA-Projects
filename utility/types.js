@@ -34,7 +34,8 @@ class GameMap {
         this.height = maps.tiles.length;
         this.tiles = maps.tiles;
         // At the moment tiles is an array of columns, but it would be more intuitive to have it as an array of rows. Let's transpose it for easier access.
-        this.tiles = this.transposeTiles(this.tiles);
+        //this.tiles = this.transposeTiles(this.tiles);
+        //this.printFullMap();
     }
 
     transposeTiles(tiles) {
@@ -42,10 +43,17 @@ class GameMap {
         for (let y = 0; y < this.height; y++) {
             transposed[y] = [];
             for (let x = 0; x < this.width; x++) {
-                transposed[y][x] = tiles[x][y];
+                transposed[y][x] = tiles[x][this.height - y];
+                console.log(`Tile at (${x}, ${y}): ${tiles[x][this.height - y - 1]}`);
             }
         }
         return transposed;
+    }
+
+    printFullMap(){
+        const mapString = this.tiles.map(row => row.join(" ")).join("\n");
+        console.log(this.tiles[0][16])
+        console.log("🗺️ Mappa:\n" + mapString);
     }
 }
 
