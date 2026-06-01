@@ -30,16 +30,17 @@ class GameMap {
      * @param {import("@unitn-asa/deliveroo-js-sdk/types/IOGameOptions.js").IOMapOptions} maps - The map data received from the server configuration.
      */
     constructor(maps) {
-        this.width = maps.tiles[0].length;
-        this.height = maps.tiles.length;
+        this.width = maps.tiles.length;
+        this.height = maps.tiles[0].length;
         this.tiles = maps.tiles;
     }
 
     printFullMap(){
         let map = '';
+        console.log(`Map size: ${this.width}x${this.height}`);
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                map += this.tiles[y][x] + ' ';
+                map += this.tiles[x][y] + ' ';
             }
             map += '\n';
         }

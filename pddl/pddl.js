@@ -61,7 +61,6 @@ class Pddl {
         try {
             this.logger.debug("Solving PDDL problem...");
             const plan = await onlineSolver(this.domain, this.problem);
-            this.logger.info("Plan found");
             return plan;
         } catch (error) {
             this.logger.error("Error solving PDDL problem:", error);

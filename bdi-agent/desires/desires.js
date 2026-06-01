@@ -74,7 +74,7 @@ class Desires {
         if (deliveryPoints.length === 0) return -1;
 
         // Max priority if we can't carry more parcels or if we are on a delivery tile
-        if (belief.config.map.tiles[belief.me.y]?.[belief.me.x]?.toString() === '2') return 1000;
+        if (belief.config.map.tiles[belief.me.x]?.[belief.me.y]?.toString() === '2') return 1000;
         const carrying = parcels.length;
         const canCarry = belief.config?.capacity ? belief.config.capacity - carrying : Infinity;
         this.logger.debug(`We are carrying ${carrying} parcels and so we can carry ${canCarry} more`);
