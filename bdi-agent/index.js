@@ -6,6 +6,7 @@ import { Movement } from "../utility/index.js";
 import { IntentionsRevise } from "./intention/revise.js";
 import { Planner } from "./planner/planner.js";
 import { PickUpPlan, LookForParcelPlan, DeliverPlan } from "./planner/index.js";
+import { Pddl, GoToPddl } from "../pddl/index.js";
 
 
 // Salva il metodo originale
@@ -54,6 +55,12 @@ socket.onYou((me) => {
 
 socket.onConfig((config) => {belief.updateConfig(config); desires.generateDesires(belief); });
 
-socket.onMap(() => {Movement.invalidateCache(); });
+const cachePopulator = new GoToPddl(null, null);
+
+socket.onMap(() => {
+  Movement.invalidateCache(); 
+  Pddl.clearCache();
+  cachePopulator.populateCache(belief.config.map);
+});
 
 intentions.loop();

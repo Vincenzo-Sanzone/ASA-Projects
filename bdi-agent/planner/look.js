@@ -37,24 +37,15 @@ class LookForParcelPlan extends Plan {
      */
     getBestSpawnTile() {
         const { map } = this.intention.beliefs.config;
-        const walkableTiles = [];
-        // Collect all spwan tiles
-        for (let y = 0; y < map.height; y++) {
-            for (let x = 0; x < map.width; x++) {
-                const tile = map.tiles[x][y];
-                if (tile.toString() === '1') {
-                    walkableTiles.push({ x, y });
-                }
-            }
-        }
+        const spawnTiles = Movement.getSpawnPoints(map);
 
-        if (walkableTiles.length === 0) {
-            this.logger.error("No walkable tiles found!");
+        if (spawnTiles.length === 0) {
+            this.logger.error("No spawn tiles found!");
             return false;
         }
         const { me } = this.intention.beliefs;
 
-        const clustersRaw = Movement.getSpawnClusters(map, walkableTiles, 3);
+        const clustersRaw = Movement.getSpawnClusters(map, spawnTiles, 3);
 
         const clusters = clustersRaw.map(c =>this.analyzeCluster(map, c, me));
 

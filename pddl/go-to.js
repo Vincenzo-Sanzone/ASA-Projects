@@ -1,6 +1,6 @@
 import { Movement } from "../utility/movement.js";
 import { Pddl } from "./pddl.js";
-import { Belief } from "../bdi-agent/belief/belief.js";
+import { GameMap } from "../utility/types.js";
 
 class GoToPddl extends Pddl {
     constructor(socket, intention) {
@@ -18,19 +18,17 @@ class GoToPddl extends Pddl {
 
     /**
      * Adds a belief to the belief set. Subclasses must implement this method to define how beliefs are added.
-     * @param {Belief} belief - The belief to add to the belief set.
+     * @param {GameMap} map - The game map to add to the belief set.
+     * @param { {x: number, y: number} } me - The position of the agent.
      */
-    async addBelief(belief) {
+    async addBelief(map, me) {
         // Declare the position of the agent
-        this.beliefset.declare(`agent x${belief.me.x} y${belief.me.y}`);
-
-        // Declare the position of the other agents ad walls
-        
+        this.beliefset.declare(`agent x${me.x} y${me.y}`);        
 
         // Declare the position of the walls and left up tiles
-        for (let y=0; y < belief.config.map.height; y++) {
-            for (let x=0; x < belief.config.map.width; x++) {
-                const value = belief.config.map.tiles[x][y].toString();
+        for (let y=0; y < map.height; y++) {
+            for (let x=0; x < map.width; x++) {
+                const value = map.tiles[x][y].toString();
                 if (value === '0') {
                     this.beliefset.declare(`wall x${x} y${y}`);
                 }
@@ -48,18 +46,19 @@ class GoToPddl extends Pddl {
                 }
 
 
-                if (y === 0 && x < belief.config.map.width - 1) {
+                if (y === 0 && x < map.width - 1) {
                     this.beliefset.declare(`left x${x} x${x + 1}`);
                 }
             }
 
-            if (y < belief.config.map.height - 1) {
+            if (y < map.height - 1) {
                 this.beliefset.declare(`up y${y+1} y${y}`);
             }
         }
     }
 
     stop() {
+        this.stopped = true;
         this.movement.stop();
     }
 
@@ -101,6 +100,30 @@ class GoToPddl extends Pddl {
                 executor: (x, y1, y2, y3) => { return this.movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }, belief) }
             },
         )
+    }
+
+    async populateCache(map) {
+        this.logger.info('Populating cache...');
+        const deliveryPoints = Movement.getDeliveryPoints(map);
+        const spawnPoints = Movement.getSpawnPoints(map);
+        // Start solving problems for all pairs of spawn and delivery points to populate the cache with useful plans that can be reused during the game.
+        for (const delivery of deliveryPoints) {
+            for (const spawn of spawnPoints) {
+                if (this.stopped) return;
+                await this.addBelief(map, delivery);
+                await this.addGoal(spawn);
+                await this.solve();
+            }
+        }
+        
+        for (const spawn of spawnPoints) {
+            for (const delivery of deliveryPoints) {
+                if (this.stopped) return;
+                await this.addBelief(map, spawn);
+                await this.addGoal(delivery);
+                await this.solve();
+            }
+        }
     }
 }
 

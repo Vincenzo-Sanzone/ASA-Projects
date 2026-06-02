@@ -122,6 +122,7 @@ class GoToPlan extends Plan {
         }
 
         const distance = Movement.getDistance(beliefs.config?.map, { x: startX, y: startY }, { x, y });
+        this.logger.info(`Distance to target: ${distance}`);
         if (distance <= 3) {
             this.logger.info(`Close enough to (${x}, ${y}), using direct move`);
             const moves = Movement.getPathAsFormattedCoordinates(beliefs.config?.map, { x: startX, y: startY }, { x, y });
@@ -143,7 +144,7 @@ class GoToPlan extends Plan {
         }
         else {
             this.logger.info(`Adding information to the PDDL to solve move from ${startX},${startY} to ${x},${y}`)
-            await this.goToPddl.addBelief(beliefs);
+            await this.goToPddl.addBelief(beliefs.config?.map, beliefs.me);
             await this.goToPddl.addGoal({ x, y });
             if (this.stopped) return false;
             const plan = await this.goToPddl.solve();

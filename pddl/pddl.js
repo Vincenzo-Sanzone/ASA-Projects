@@ -4,6 +4,8 @@ import { onlineSolver, PddlExecutor, PddlProblem, Beliefset } from "@unitn-asa/p
 
 
 class Pddl {
+    static #cache = {};
+
     constructor(socket, chosenPlan, intention) {
         this.domain = null;
         this.problem = null;
@@ -14,7 +16,7 @@ class Pddl {
         this.executor = new PddlExecutor();
 
         this.logger = new Logger("PDDL:")
-        this.addAllAction(intention.beliefs);
+        if (intention) this.addAllAction(intention.beliefs);
     }
 
     /**
@@ -58,9 +60,14 @@ class Pddl {
         if (!this.domain || !this.problem) {
             throw new Error("Domain and problem must be loaded before solving.");
         }
+        if (this.#getCache(this.problem)) {
+            this.logger.info("Using cached plan for problem.");
+            return this.#getCache(this.problem);
+        }
         try {
             this.logger.debug("Solving PDDL problem...");
             const plan = await onlineSolver(this.domain, this.problem);
+            this.#addCache(this.problem, plan);
             return plan;
         } catch (error) {
             this.logger.error("Error solving PDDL problem:", error);
@@ -95,6 +102,23 @@ class Pddl {
      */
     addAllAction(belief) {
         throw new Error("Method 'addAllAction()' must be implemented by subclasses.")
+    }
+
+    #addCache(key, value) {
+        // Remove the row ;; problem file: problem-XXXXXX.pddl from the string
+        key = key.replace(/problem.*\.pddl/g, 'problem.pddl');
+        Pddl.#cache[key] = value;
+        this.logger.info(`Now we have ${Object.keys(Pddl.#cache).length} cached plans.`);
+    }
+
+    #getCache(key) {
+        // Remove the row ;; problem file: problem-XXXXXX.pddl from the string
+        key = key.replace(/problem.*\.pddl/g, 'problem.pddl');
+        return Pddl.#cache[key];
+    }
+
+    static clearCache() {
+        Pddl.#cache = {};
     }
 }
 

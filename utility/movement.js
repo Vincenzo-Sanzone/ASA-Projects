@@ -300,6 +300,20 @@ class Movement {
         }, undefined);
     }
 
+    static getSpawnPoints(map) {
+        const spawnPoints = [];
+        // Collect all spawn tiles
+        for (let y = 0; y < map.height; y++) {
+            for (let x = 0; x < map.width; x++) {
+                const tile = map.tiles[x][y];
+                if (tile.toString() === '1') {
+                    spawnPoints.push({ x, y });
+                }
+            }
+        }
+        return spawnPoints;
+    }
+
     static getSpawnClusters(map, spawnTiles, radius = 3) {
         // CACHE HIT
         if (this.#spawnClusterCache) {
