@@ -53,7 +53,6 @@ class Desires {
         if (distToParcel === 0) return 900 + parcel.reward;
 
         const estimatedReward = this.estimateRewardAfterSteps(parcel.reward, distToParcel, 50, this.clockEventToMs(belief.config.decayEvent));
-        this.logger.info(`Estimated reward for parcel ${parcel.id} after ${distToParcel} steps: ${estimatedReward}`);
         if (estimatedReward <= 10) return -1;
         if (distToParcel <= belief.config?.observationDistance) {
             this.logger.debug(`Parcel ${parcel.id} distance to me: ${distToParcel}, is within observation distance (${belief.config?.observationDistance})`);

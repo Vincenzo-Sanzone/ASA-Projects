@@ -35,9 +35,9 @@ class LookForParcelPlan extends Plan {
      * @param {*} map - The map of the environment, used to calculate distances and identify walkable tiles. 
      * @returns 
      */
-    getBestSpawnTile(walkableTiles) {
+    getBestSpawnTile() {
         const { map } = this.intention.beliefs.config;
-
+        const walkableTiles = [];
         // Collect all spwan tiles
         for (let y = 0; y < map.height; y++) {
             for (let x = 0; x < map.width; x++) {
@@ -70,8 +70,6 @@ class LookForParcelPlan extends Plan {
             const explorationScore = this.scoreExploration(c,clustersRaw,map);
 
             const score = deliveryScore > -Infinity ? deliveryScore : explorationScore;
-
-            this.logger.info(`Cluster with size ${c.size}, minDistanceToMe ${c.minDistanceToMe}, minDistanceToDelivery ${c.minDistanceToDelivery} has deliveryScore ${deliveryScore} and explorationScore ${explorationScore}, blended score: ${score}`);
 
             if (score > bestScore) {
                 bestScore = score;
