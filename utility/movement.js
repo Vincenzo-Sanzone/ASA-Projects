@@ -3,23 +3,27 @@ import { GameMap, Logger } from "./index.js";
 
 class Movement {
     static #distanceCache = new Map();
-
+    static #spawnClusterCache = null;
     /**
      * 
      * @param {DjsClientSocket} socket - The socket connection. 
      */
     constructor(socket) {
         this.socket = socket;
+        this.stopped = false;
         this.logger = new Logger("Movement:")
+    }
+
+    stop() {
+        this.stopped = true;
     }
 
     /**
      * @param { {x: string, y:string} } start - Starting position of the agent.
      * @param { {x: string, y:string} } target - Target position to move to.
-     * @param {boolean} stop - A flag that can be set to `true` to stop the movement early.
      */
-    async moveTo(start, target, stop) {
-        if (stop) return;
+    async moveTo(start, target) {
+        if (this.stopped) return;
         const xStart = parseInt(start.x.toLowerCase().replace("x", ""));
         const yStart = parseInt(start.y.toLowerCase().replace("y", ""));
         const xTarget = parseInt(target.x.toLowerCase().replace("x", ""));
@@ -95,8 +99,8 @@ class Movement {
 
         // Define possible movements and their required tile types (for directional arrows)
         const directions = [
-            { dx: 0, dy: -1, requiredTile: '↑' }, // Up: the destination cell (y-1) must be '↑'
-            { dx: 0, dy: 1, requiredTile: '↓' }, // Down: the destination cell (y+1) must be '↓'
+            { dx: 0, dy: 1, requiredTile: '↑' }, // Up: the destination cell (y+1) must be '↑'
+            { dx: 0, dy: -1, requiredTile: '↓' }, // Down: the destination cell (y-1) must be '↓'
             { dx: 1, dy: 0, requiredTile: '→' }, // Right: the destination cell (x+1) must be '→'
             { dx: -1, dy: 0, requiredTile: '←' }  // Left: the destination cell (x-1) must be '←'
         ];
@@ -283,7 +287,7 @@ class Movement {
         return deliveryPoints.reduce((nearest, point) => {
             const distance = this.getDistance(map, start, point);
             if (distance === NaN || distance === Infinity) {
-                return {distance: Infinity, x: null, y: null};
+                return { distance: Infinity, x: null, y: null };
             }
             if (!nearest || distance < nearest.distance) {
                 return { distance, x: point.x, y: point.y };
@@ -292,9 +296,61 @@ class Movement {
         }, undefined);
     }
 
+    static getSpawnClusters(map, spawnTiles, radius = 3) {
+        // CACHE HIT
+        if (this.#spawnClusterCache) {
+            return this.#spawnClusterCache;
+        }
+
+        const clusters = [];
+        const visited = new Set();
+        const key = t => `${t.x},${t.y}`;
+
+        for (const center of spawnTiles) {
+            const centerKey = key(center);
+
+            if (visited.has(centerKey))
+                continue;
+
+            const cluster = [];
+            const queue = [center];
+
+            visited.add(centerKey);
+
+            while (queue.length) {
+                const current = queue.shift();
+
+                cluster.push(current);
+
+                for (const other of spawnTiles) {
+                    const otherKey = key(other);
+
+                    if (visited.has(otherKey))
+                        continue;
+
+                    const d1 = Movement.getDistance(map, center, other);
+                    const d2 = Movement.getDistance(map, other, center);
+
+                    if (d1 <= radius && d2 <= radius) {
+                        visited.add(otherKey);
+                        queue.push(other);
+                    }
+                }
+            }
+
+            clusters.push(cluster);
+        }
+
+        // save cache
+        this.#spawnClusterCache = clusters;
+
+        return clusters;
+    }
+
 
     static invalidateCache() {
         this.#distanceCache.clear();
+        this.#spawnClusterCache = null;
     }
 }
 

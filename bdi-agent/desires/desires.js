@@ -50,7 +50,11 @@ class Desires {
         const me = { x: belief.me.x, y: belief.me.y };
         const distToParcel = Movement.getDistance(belief.config.map, me, { x: parcel.x, y: parcel.y });
         if (distToParcel === Infinity) return -1;
+        if (distToParcel === 0) return 900 + parcel.reward;
 
+        const estimatedReward = this.estimateRewardAfterSteps(parcel.reward, distToParcel, 50, this.clockEventToMs(belief.config.decayEvent));
+        this.logger.info(`Estimated reward for parcel ${parcel.id} after ${distToParcel} steps: ${estimatedReward}`);
+        if (estimatedReward <= 10) return -1;
         if (distToParcel <= belief.config?.observationDistance) {
             this.logger.debug(`Parcel ${parcel.id} distance to me: ${distToParcel}, is within observation distance (${belief.config?.observationDistance})`);
             return 900 + parcel.reward - distToParcel;
@@ -165,7 +169,7 @@ class Desires {
      */
     estimateRewardAfterSteps(reward, steps, clockMs, decayTimeMs) {
         if (decayTimeMs === Infinity || decayTimeMs === 0) return reward;
-        const elapsed = steps * clockMs;
+        const elapsed = steps * clockMs * 2;
         return Math.max(0, reward - elapsed / decayTimeMs);
     }
 

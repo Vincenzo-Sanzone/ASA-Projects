@@ -21,8 +21,22 @@ class LookForParcelPlan extends Plan {
     }
 
     async execute() {
+        // Calculate best spawn tile to move
+        const { x, y } = this.getBestSpawnTile();
+
+        this.logger.info(`Moving to random spawn tile: (${x}, ${y})`);
+        // Move to the random tile
+        await this.goTo.execute(x, y);
+        return !this.stopped;
+    }
+
+    /**
+     * Choose the best spawn tile to move to based on a scoring system that considers both delivery potential and exploration potential.
+     * @param {*} map - The map of the environment, used to calculate distances and identify walkable tiles. 
+     * @returns 
+     */
+    getBestSpawnTile(walkableTiles) {
         const { map } = this.intention.beliefs.config;
-        const walkableTiles = [];
 
         // Collect all spwan tiles
         for (let y = 0; y < map.height; y++) {
@@ -38,32 +52,100 @@ class LookForParcelPlan extends Plan {
             this.logger.error("No walkable tiles found!");
             return false;
         }
+        const { me } = this.intention.beliefs;
 
-        // Calculate score for each walkable tile
-        const scoredTiles = walkableTiles.map(tile => {
-            // Count nearby spawns (within a certain radius, e.g., 3 tiles)
-            const nearbySpawns = walkableTiles.filter(spawn =>
-                Movement.getDistance(map, spawn, tile) <= 3
-            ).length;
+        const clustersRaw = Movement.getSpawnClusters(map, walkableTiles, 3);
 
-            // Check if there's a delivery nearby (within a certain radius, e.g., 5 tiles)
-            const hasNearbyDelivery = Movement.getDeliveryPoints(map).some(delivery =>
-                Movement.getDistance(map, delivery, tile) <= 5
+        const clusters = clustersRaw.map(c =>this.analyzeCluster(map, c, me));
+
+        let best = null;
+        let bestScore = -Infinity;
+
+        for (const c of clusters) {
+
+            // Score based on delivery potential: how many parcels could be in this cluster and how close it is to delivery points
+            const deliveryScore = this.scoreDelivery(c);
+
+            // Score based on exploration potential: how many new tiles could we explore by going to this cluster and how far it is from other clusters (to maximize coverage)
+            const explorationScore = this.scoreExploration(c,clustersRaw,map);
+
+            const score = deliveryScore > -Infinity ? deliveryScore : explorationScore;
+
+            this.logger.info(`Cluster with size ${c.size}, minDistanceToMe ${c.minDistanceToMe}, minDistanceToDelivery ${c.minDistanceToDelivery} has deliveryScore ${deliveryScore} and explorationScore ${explorationScore}, blended score: ${score}`);
+
+            if (score > bestScore) {
+                bestScore = score;
+                best = c;
+            }
+        }
+
+        if (!best) return null;
+
+        // entry tile
+        let bestTile = null;
+        let bestDist = Infinity;
+
+        for (const t of best.cluster) {
+            const d = Movement.getDistance(map, me, t);
+
+            if (d < bestDist) {
+                bestDist = d;
+                bestTile = t;
+            }
+        }
+
+        return bestTile;
+    }
+
+    analyzeCluster(map, cluster, me) {
+        const distancesToMe = cluster.map(t =>
+            Movement.getDistance(map, me, t)
+        );
+
+        const minDistanceToMe = Math.min(...distancesToMe);
+
+        const nearestDeliveryDistances = cluster.map(t =>
+            Movement.getDistance(
+                map,
+                t,
+                Movement.nearestDeliveryPoint(map, t)
+            )
+        );
+
+        const minDistanceToDelivery = Math.min(...nearestDeliveryDistances);
+
+        return {
+            cluster,
+            size: cluster.length,
+            minDistanceToMe,
+            minDistanceToDelivery
+        };
+    }
+
+    scoreDelivery(clusterInfo) {
+        if (clusterInfo.minDistanceToMe <= 3)return -Infinity;
+
+        return clusterInfo.size * 20 - clusterInfo.minDistanceToDelivery;
+    }
+
+    scoreExploration(clusterInfo, allClusters, map) {
+        const distanceFromOtherClusters = allClusters
+            .filter(c => c !== clusterInfo.cluster)
+            .map(c =>
+                Math.min(
+                    ...c.map(t =>
+                        Math.min(
+                            ...clusterInfo.cluster.map(t2 =>
+                                Movement.getDistance(map, t, t2)
+                            )
+                        )
+                    )
+                )
             );
 
-            // Score: prioritize tiles with more spawns and nearby deliveries
-            const score = nearbySpawns * 2 + (hasNearbyDelivery ? 3 : 0);
-            return { ...tile, score };
-        });
+        const minDistanceToOthers = Math.min(...distanceFromOtherClusters);
 
-        // Sort by score (descending) and pick the best
-        scoredTiles.sort((a, b) => b.score - a.score);
-        const {x, y} = scoredTiles[0];
-        
-        this.logger.info(`Moving to random spawn tile: (${x}, ${y})`);
-        // Move to the random tile
-        await this.goTo.execute(x, y);
-        return !this.stopped;
+        return clusterInfo.size * 10 + minDistanceToOthers;
     }
 }
 
