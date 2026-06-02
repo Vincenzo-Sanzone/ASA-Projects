@@ -3,14 +3,9 @@ import { Pddl } from "./pddl.js";
 import { Belief } from "../bdi-agent/belief/belief.js";
 
 class GoToPddl extends Pddl {
-    constructor(socket) {
-        super(socket, "go-to");
+    constructor(socket, intention) {
+        super(socket, "go-to", intention);
         this.movement = new Movement(socket);
-    }
-
-    stop() {
-        this.stopped = true;
-        this.movement.stop();
     }
 
     /**
@@ -64,42 +59,46 @@ class GoToPddl extends Pddl {
         }
     }
 
+    stop() {
+        this.movement.stop();
+    }
+
     /**
      * Adds all the actions to the PDDL executor.
      */
-    addAllAction() {
+    addAllAction(belief) {
         this.executor.addAction(
             {
                 name: "move-left",
-                executor: (x1, x2, y) => { return this.movement.moveTo({ x: x1, y: y }, { x: x2, y: y }) }
+                executor: (x1, x2, y) => { return this.movement.moveTo({ x: x1, y: y }, { x: x2, y: y }, belief) }
             },
             {
                 name: "push-left",
-                executor: (x1, x2, x3, y) => { return this.movement.moveTo({ x: x1, y: y }, { x: x2, y: y }) }
+                executor: (x1, x2, x3, y) => { return this.movement.moveTo({ x: x1, y: y }, { x: x2, y: y }, belief) }
             },
             {
                 name: "move-right",
-                executor: (x1, x2, y) => { return this.movement.moveTo({ x: x1, y: y }, { x: x2, y: y }) }
+                executor: (x1, x2, y) => { return this.movement.moveTo({ x: x1, y: y }, { x: x2, y: y }, belief) }
             },
             {
                 name: "push-right",
-                executor: (x1, x2, x3, y) => { return this.movement.moveTo({ x: x1, y: y }, { x: x2, y: y }) }
+                executor: (x1, x2, x3, y) => { return this.movement.moveTo({ x: x1, y: y }, { x: x2, y: y }, belief) }
             },
             {
                 name: "move-up",
-                executor: (x, y1, y2) => { return this.movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }) }
+                executor: (x, y1, y2) => { return this.movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }, belief) }
             },
             {
                 name: "push-up",
-                executor: (x, y1, y2, y3) => { return this.movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }) }
+                executor: (x, y1, y2, y3) => { return this.movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }, belief) }
             },
             {
                 name: "move-down",
-                executor: (x, y1, y2) => { return this.movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }) }
+                executor: (x, y1, y2) => { return this.movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }, belief) }
             },
             {
                 name: "push-down",
-                executor: (x, y1, y2, y3) => { return this.movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }) }
+                executor: (x, y1, y2, y3) => { return this.movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }, belief) }
             },
         )
     }

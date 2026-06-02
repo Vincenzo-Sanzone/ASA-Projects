@@ -46,7 +46,11 @@ socket.onSensing((sensing) => {
     intentions.addIntentions(desires.desires);
 });
 
-socket.onYou((me) => {belief.updateMe(me); });
+socket.onYou((me) => {
+  belief.updateMe(me);
+  desires.generateDesires(belief);
+  intentions.addIntentions(desires.desires); 
+});
 
 socket.onConfig((config) => {belief.updateConfig(config); desires.generateDesires(belief); });
 

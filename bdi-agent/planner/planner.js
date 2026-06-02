@@ -97,20 +97,16 @@ class GoToPlan extends Plan {
     constructor(intention, socket) {
         super(intention, socket);
         this.logger = new Logger("GoToPlan:");
-        this.goToPddl = new GoToPddl(this.socket);
-    }
-
-    /**
-     * Stops the plan.
-     */
-    stop() { 
-        this.stopped = true; 
-        this.logger.debug("Stopping GoToPlan...");
-        this.goToPddl.stop();
+        this.goToPddl = new GoToPddl(this.socket, this.intention);
     }
 
     static isApplicable(action) {
         return false; // This plan is not directly applicable; it's used as a sub-plan.
+    }
+
+    stop() {
+        super.stop();
+        this.goToPddl.stop();
     }
 
     async execute(x, y) {
@@ -127,7 +123,7 @@ class GoToPlan extends Plan {
 
         const distance = Movement.getDistance(beliefs.config?.map, { x: startX, y: startY }, { x, y });
         if (distance <= 3) {
-            this.logger.debug(`Close enough to (${x}, ${y}), using direct move`);
+            this.logger.info(`Close enough to (${x}, ${y}), using direct move`);
             const moves = Movement.getPathAsFormattedCoordinates(beliefs.config?.map, { x: startX, y: startY }, { x, y });
             const movement = new Movement(this.socket);
             let startXAsString = 'x' + startX.toString();

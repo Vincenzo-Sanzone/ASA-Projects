@@ -29,9 +29,11 @@ class IntentionsRevise extends Intentions {
 
         // Check if the intention is the same
         if (newIntention.type === this.currentIntention?.desire.type && newIntention.type === 'pickup' && newIntention.parcelId === this.currentIntention?.desire.parcelId) {
+            this.beliefs.removeNeedToReconsider();
             return;
         }
         else if (newIntention.type === this.currentIntention?.desire.type && newIntention.type !== 'pickup') {
+            this.beliefs.removeNeedToReconsider();
             return;
         }
 
@@ -39,6 +41,7 @@ class IntentionsRevise extends Intentions {
             this.logger.debug("New highest priority:", newIntention.type, newIntention.priority);
             this.currentIntention?.stop();
         }
+        this.beliefs.removeNeedToReconsider();
     }  
 
     getNextIntention() {

@@ -4,7 +4,7 @@ import { onlineSolver, PddlExecutor, PddlProblem, Beliefset } from "@unitn-asa/p
 
 
 class Pddl {
-    constructor(socket, chosenPlan) {
+    constructor(socket, chosenPlan, intention) {
         this.domain = null;
         this.problem = null;
         this.beliefset = new Beliefset();
@@ -12,10 +12,9 @@ class Pddl {
         this.chosenPlan = chosenPlan;
         this.socket = socket;
         this.executor = new PddlExecutor();
-        this.stopped = false;
 
         this.logger = new Logger("PDDL:")
-        this.addAllAction()
+        this.addAllAction(intention.beliefs);
     }
 
     /**
@@ -94,12 +93,8 @@ class Pddl {
     /**
      * Add all the actions to the PDDL executor.
      */
-    addAllAction() {
+    addAllAction(belief) {
         throw new Error("Method 'addAllAction()' must be implemented by subclasses.")
-    }
-
-    stop() {
-        this.stopped = true;
     }
 }
 

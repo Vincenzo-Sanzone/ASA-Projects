@@ -1,5 +1,4 @@
-import { Agent, Parcel, GameConfig } from "../../utility/types.js";
-import { Logger } from "../../utility/index.js";
+import { Logger, Agent, Parcel, GameConfig, Movement } from "../../utility/index.js";
 
 class Belief {
     constructor() {
@@ -7,7 +6,8 @@ class Belief {
         this.enemies = []; // List of other agents with their id, x, y, timestampSeen
         this.config = null;
         this.parcels = []; // List of parcels with their id, position, reward, carriedBy, timestampSeen
-        
+        this.isNeededReconsidering = false; // Flag to indicate if the belief needs to be reconsidered due to changes in the environment or new information received.
+
         this.logger = new Logger("Belief:");
     }
 
@@ -17,7 +17,12 @@ class Belief {
      */
     updateMe ( agent ) {
         this.me = new Agent(agent);
-        this.logger.debug(`Now i am at ${this.me.x}, ${this.me.y}`);
+
+        const deliveryPoints = Movement.getDeliveryPoints(this.config?.map);
+        if (deliveryPoints.some(dp => dp.x === this.me.x && dp.y === this.me.y)) {
+            this.logger.debug(`I am on a delivery point at (${this.me.x}, ${this.me.y})`);
+            this.isNeededReconsidering = true;
+        }
     }
 
     /**
@@ -35,6 +40,7 @@ class Belief {
             } else {
                 // Add new parcel
                 this.parcels.push(parcel);
+                this.isNeededReconsidering = true; // If a new parcel is found, we may need to reconsider our intentions, as there may be new opportunities for pickup that were not previously known.
             }
         }
 
@@ -47,6 +53,7 @@ class Belief {
      */
     removeCarriedParcel() {
         this.parcels = this.parcels.filter(parcel => parcel.carriedBy !== this.me.id);
+        this.isNeededReconsidering = true; // If a parcel is no longer being carried, we may need to reconsider our intentions.
     }
 
     /**
@@ -79,6 +86,10 @@ class Belief {
         // Update the belief about the game configuration based on the configuration information received. This can involve updating properties such as clock, capacity, decayEvent, and generationEvent based on the config data.
         this.config = new GameConfig(config);
         this.logger.debug(`updated config information. New config: ${this.config}`);
+    }
+
+    removeNeedToReconsider() {
+        this.isNeededReconsidering = false;
     }
 }
 
