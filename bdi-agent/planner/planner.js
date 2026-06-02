@@ -97,6 +97,16 @@ class GoToPlan extends Plan {
     constructor(intention, socket) {
         super(intention, socket);
         this.logger = new Logger("GoToPlan:");
+        this.goToPddl = new GoToPddl(this.socket);
+    }
+
+    /**
+     * Stops the plan.
+     */
+    stop() { 
+        this.stopped = true; 
+        this.logger.debug("Stopping GoToPlan...");
+        this.goToPddl.stop();
     }
 
     static isApplicable(action) {
@@ -129,7 +139,7 @@ class GoToPlan extends Plan {
                 if (startXAsString === x && startYAsString === y) {
                     continue;
                 }
-                await movement.moveTo({ x: startXAsString, y: startYAsString }, { x, y });
+                await movement.moveTo({ x: startXAsString, y: startYAsString }, { x, y }, this.stopped);
                 if(this.stopped) return false;
                 startXAsString = x;
                 startYAsString = y;
@@ -137,11 +147,10 @@ class GoToPlan extends Plan {
         }
         else {
             this.logger.info(`Adding information to the PDDL to solve move from ${startX},${startY} to ${x},${y}`)
-            const goToPddl = new GoToPddl(this.socket);
-            await goToPddl.addBelief(beliefs);
-            await goToPddl.addGoal({ x, y });
+            await this.goToPddl.addBelief(beliefs);
+            await this.goToPddl.addGoal({ x, y });
             if (this.stopped) return false;
-            const plan = await goToPddl.solve();
+            const plan = await this.goToPddl.solve();
             if (!plan) {
                 this.logger.error(`No plan found to go to (${x}, ${y})`);
                 return false;
@@ -149,7 +158,7 @@ class GoToPlan extends Plan {
 
             if(this.stopped) return false; 
             this.logger.info("Executing plan");
-            await goToPddl.executePlan(plan);
+            await this.goToPddl.executePlan(plan);
         } 
         return !this.stopped;
     }

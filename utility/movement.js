@@ -16,8 +16,10 @@ class Movement {
     /**
      * @param { {x: string, y:string} } start - Starting position of the agent.
      * @param { {x: string, y:string} } target - Target position to move to.
+     * @param {boolean} stop - A flag that can be set to `true` to stop the movement early.
      */
-    async moveTo(start, target) {
+    async moveTo(start, target, stop) {
+        if (stop) return;
         const xStart = parseInt(start.x.toLowerCase().replace("x", ""));
         const yStart = parseInt(start.y.toLowerCase().replace("y", ""));
         const xTarget = parseInt(target.x.toLowerCase().replace("x", ""));

@@ -85,7 +85,7 @@ class Desires {
         if (distance === Infinity) return -1;
 
         // Priority is based on the distance to the nearest delivery point, and the number of parcels we can carry
-        const priority = 100 / (distance + 1) + carrying * 10;
+        const priority = 100 + carrying * 10;
         return priority
     }
 

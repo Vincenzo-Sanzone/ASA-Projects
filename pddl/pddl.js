@@ -12,6 +12,7 @@ class Pddl {
         this.chosenPlan = chosenPlan;
         this.socket = socket;
         this.executor = new PddlExecutor();
+        this.stopped = false;
 
         this.logger = new Logger("PDDL:")
         this.addAllAction()
@@ -95,6 +96,10 @@ class Pddl {
      */
     addAllAction() {
         throw new Error("Method 'addAllAction()' must be implemented by subclasses.")
+    }
+
+    stop() {
+        this.stopped = true;
     }
 }
 

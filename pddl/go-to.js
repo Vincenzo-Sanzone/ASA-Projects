@@ -66,35 +66,35 @@ class GoToPddl extends Pddl {
         this.executor.addAction(
             {
                 name: "move-left",
-                executor: (x1, x2, y) => { return movement.moveTo({ x: x1, y: y }, { x: x2, y: y }) }
+                executor: (x1, x2, y) => { return movement.moveTo({ x: x1, y: y }, { x: x2, y: y }, this.stopped) }
             },
             {
                 name: "push-left",
-                executor: (x1, x2, x3, y) => { return movement.moveTo({ x: x1, y: y }, { x: x2, y: y }) }
+                executor: (x1, x2, x3, y) => { return movement.moveTo({ x: x1, y: y }, { x: x2, y: y }, this.stopped) }
             },
             {
                 name: "move-right",
-                executor: (x1, x2, y) => { return movement.moveTo({ x: x1, y: y }, { x: x2, y: y }) }
+                executor: (x1, x2, y) => { return movement.moveTo({ x: x1, y: y }, { x: x2, y: y }, this.stopped) }
             },
             {
                 name: "push-right",
-                executor: (x1, x2, x3, y) => { return movement.moveTo({ x: x1, y: y }, { x: x2, y: y }) }
+                executor: (x1, x2, x3, y) => { return movement.moveTo({ x: x1, y: y }, { x: x2, y: y }, this.stopped) }
             },
             {
                 name: "move-up",
-                executor: (x, y1, y2) => { return movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }) }
+                executor: (x, y1, y2) => { return movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }, this.stopped) }
             },
             {
                 name: "push-up",
-                executor: (x, y1, y2, y3) => { return movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }) }
+                executor: (x, y1, y2, y3) => { return movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }, this.stopped) }
             },
             {
                 name: "move-down",
-                executor: (x, y1, y2) => { return movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }) }
+                executor: (x, y1, y2) => { return movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }, this.stopped) }
             },
             {
                 name: "push-down",
-                executor: (x, y1, y2, y3) => { return movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }) }
+                executor: (x, y1, y2, y3) => { return movement.moveTo({ x: x, y: y1 }, { x: x, y: y2 }, this.stopped) }
             },
         )
     }
