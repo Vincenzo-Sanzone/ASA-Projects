@@ -1,4 +1,5 @@
 import { GameMap, Movement } from "./index.js";
+import { Belief } from "../bdi-agent/belief/belief.js";
 
 class Strategy {
 
@@ -52,6 +53,23 @@ class Strategy {
         }
 
         return bestTile;
+    }
+
+    /**
+     * 
+     * @param {GameMap} map - The map
+     * @param {{x: number, y: number}} start - The starting position
+     * @param {{x: number, y: number}} target - The target position 
+     * @param {Belief} belief - The agent's belief
+     */
+    static isValidMove(map, start, target, belief) {
+        if (!Movement.isReachable(map, start, target)) return false;
+        
+        for (const enemy of belief.enemies) {
+            if (target.x === enemy.x && target.y === enemy.y) return false;
+        }
+
+        return true;
     }
 
     static #analyzeCluster(map, cluster, me) {

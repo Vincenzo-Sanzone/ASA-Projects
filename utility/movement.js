@@ -1,5 +1,5 @@
 import { DjsClientSocket } from "@unitn-asa/deliveroo-js-sdk";
-import { GameMap, Logger, executeUntilDone } from "./index.js";
+import { GameMap, Logger, executeUntilDone, Strategy } from "./index.js";
 import { Belief } from "../bdi-agent/belief/belief.js";
 class Movement {
     static #distanceCache = new Map();
@@ -63,9 +63,12 @@ class Movement {
             move = "down";
         }
 
-        await executeUntilDone((...args) => this.socket.emitMove(...args), move);
-        
-        await waitForCompleteMove
+        if (Strategy.isValidMove(belief.config?.map, { x: xStart, y: yStart }, { x: xTarget, y: yTarget }, belief)) {
+            await executeUntilDone((...args) => this.socket.emitMove(...args), move);
+            await waitForCompleteMove
+        } else {
+            this.logger.debug("Invalid move, try to find a new path to the target");
+        }
     }
 
     /**
