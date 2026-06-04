@@ -135,12 +135,11 @@ class GoToPlan extends Plan {
                 if (startXAsString === x && startYAsString === y) {
                     continue;
                 }
-                await movement.moveTo({ x: startXAsString, y: startYAsString }, { x, y }, this.stopped);
+                await movement.moveTo({ x: startXAsString, y: startYAsString }, { x, y }, this.intention.beliefs);
                 if(this.stopped) return false;
                 startXAsString = x;
                 startYAsString = y;
             }
-            return !this.stopped;
         }
         else {
             this.logger.debug(`Adding information to the PDDL to solve move from ${startX},${startY} to ${x},${y}`)
