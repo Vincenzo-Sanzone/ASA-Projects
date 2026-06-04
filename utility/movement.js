@@ -39,7 +39,12 @@ class Movement {
             return;
         }
 
-        var waitForCompleteMove = new Promise(res => this.socket.onYou(m => m.x % 1 != 0 || m.y % 1 != 0 ? null : res()));
+        let finalX, finalY;
+        var waitForCompleteMove = new Promise(res => this.socket.onYou(m =>{
+            finalX = m.x;
+            finalY = m.y;
+            m.x % 1 != 0 || m.y % 1 != 0 ? null : res();
+        }));
 
         let move = ""
         // Check if we have to move left
@@ -66,8 +71,13 @@ class Movement {
         if (Strategy.isValidMove(belief.config?.map, { x: xStart, y: yStart }, { x: xTarget, y: yTarget }, belief)) {
             await executeUntilDone((...args) => this.socket.emitMove(...args), move);
             await waitForCompleteMove
+            if (finalX !== xTarget || finalY !== yTarget) {
+                this.logger.info("We moved but didn't reach the target position");
+                this.stopped = true;
+            }
         } else {
-            this.logger.debug("Invalid move, try to find a new path to the target");
+            this.logger.info("Invalid move, try to find a new path to the target");
+            this.stopped = true;
         }
     }
 

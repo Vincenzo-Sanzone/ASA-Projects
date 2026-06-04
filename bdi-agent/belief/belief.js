@@ -50,18 +50,23 @@ class Belief {
         }
         // Remove non sensed parcels that i knew were there.
         const visibleIds = new Set(parcels.map(p => p.id));
-        this.parcels = this.parcels.filter(parcel => {
+        this.parcels = this.filterNotInViewObject(this.parcels, visibleIds);
+        this.updateRewardParcel();
+    }
 
-            const dx = Math.abs(parcel.x - this.me.x);
-            const dy = Math.abs(parcel.y - this.me.y);
-
+    /**
+     * This function filters out objects that should be visible to the agent, but are not in the view of the agent.
+     * @param {Array} array - Array of objects to filter.
+     */
+    filterNotInViewObject(array, visibleIds) {
+        return array.filter(obj => {
+            const dx = Math.abs(obj.x - this.me.x);
+            const dy = Math.abs(obj.y - this.me.y);
             const isInView = dx + dy <= this.config?.observationDistance;
 
-            // If the parcel is not visible, remove it
-            return !(isInView && !visibleIds.has(parcel.id));
-        });
-
-        this.updateRewardParcel();
+            // If the parcel object is visible, remove it
+            return !(isInView && !visibleIds.has(obj.id));
+        })
     }
 
     /**
@@ -110,6 +115,10 @@ class Belief {
                 this.enemies.push(agent);
             }
         }
+
+        // Remove non sensed agents that i knew were there.
+        const visibleIds = new Set(agents.map(p => p.id));
+        this.enemies = this.filterNotInViewObject(this.enemies, visibleIds);
     }
 
 
