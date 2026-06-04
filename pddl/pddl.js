@@ -63,8 +63,6 @@ class Pddl {
         if (this.#getCache(this.problem)) {
             this.logger.info("Using cached plan for problem.");
             const plan = this.#getCache(this.problem);
-            // write the plan
-            saveFile(path.join('pddl', 'plans', `${this.chosenPlan}.plan`), plan.map(step => [step.action, ...step.args].join(' ')).join('\n'));
             return plan;
         }
         try {
