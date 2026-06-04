@@ -1,5 +1,5 @@
 import { Plan, GoToPlan } from "./planner.js";
-import { Logger, Movement } from "../../utility/index.js";
+import { Logger, Movement, executeUntilDone } from "../../utility/index.js";
 
 /**
  * Plan to deliver all carried parcels at a delivery point.
@@ -32,7 +32,7 @@ class DeliverPlan extends Plan {
         // Deliver all carried parcels, if we are still carrying some and we are on a delivery tile
         if (this.intention.beliefs.parcels.some(p => p.carriedBy === this.intention.beliefs.me.id) && this.intention.beliefs.me.x === x && this.intention.beliefs.me.y === y) {
             this.logger.info(`Delivering all carried parcels`);
-            await this.socket.emitPutdown();
+            await executeUntilDone(() => this.socket.emitPutdown())
             this.intention.beliefs.removeCarriedParcel();
         }
         else {

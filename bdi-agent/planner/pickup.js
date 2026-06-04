@@ -1,5 +1,5 @@
 import { Plan, GoToPlan } from "./planner.js";
-import { Logger } from "../../utility/index.js";
+import { Logger, executeUntilDone } from "../../utility/index.js";
 
 /**
  * Plan to pick up a specific parcel.
@@ -30,7 +30,7 @@ class PickUpPlan extends Plan {
 
         this.logger.info(`Emitting pickup parcel ${id}`);
         // Step 2: Pick up the parcel
-        await this.socket.emitPickup();
+        await executeUntilDone(() => this.socket.emitPickup());
         return true;
     }
 }

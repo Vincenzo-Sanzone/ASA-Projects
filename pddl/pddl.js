@@ -1,5 +1,5 @@
 import path from 'path';
-import { readFile, Logger, saveFile } from '../utility/index.js';
+import { readFile, Logger, saveFile, executeUntilDone } from '../utility/index.js';
 import { onlineSolver, PddlExecutor, PddlProblem, Beliefset } from "@unitn-asa/pddl-client";
 
 
@@ -62,11 +62,14 @@ class Pddl {
         }
         if (this.#getCache(this.problem)) {
             this.logger.info("Using cached plan for problem.");
-            return this.#getCache(this.problem);
+            const plan = this.#getCache(this.problem);
+            // write the plan
+            saveFile(path.join('pddl', 'plans', `${this.chosenPlan}.plan`), plan.map(step => [step.action, ...step.args].join(' ')).join('\n'));
+            return plan;
         }
         try {
             this.logger.debug("Solving PDDL problem...");
-            const plan = await onlineSolver(this.domain, this.problem);
+            const plan = await executeUntilDone(onlineSolver, this.domain, this.problem);
             this.#addCache(this.problem, plan);
             return plan;
         } catch (error) {

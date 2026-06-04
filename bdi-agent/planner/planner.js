@@ -36,7 +36,7 @@ class Planner {
 
         for (const PlanClass of this.planLibrary) {
             if (PlanClass.isApplicable(action, x, y, id, deliveryId)) {
-                this.logger.info(`Found plan: ${PlanClass.name}`);
+                this.logger.debug(`Found plan: ${PlanClass.name}`);
                 return new PlanClass(intention, this.socket);
             }
         }
@@ -122,9 +122,8 @@ class GoToPlan extends Plan {
         }
 
         const distance = Movement.getDistance(beliefs.config?.map, { x: startX, y: startY }, { x, y });
-        this.logger.info(`Distance to target: ${distance}`);
-        if (distance <= 3) {
-            this.logger.info(`Close enough to (${x}, ${y}), using direct move`);
+        if (distance <= 5) {
+            this.logger.info(`Close enough to (${x}, ${y}), using direct move for a total of ${distance} steps`);
             const moves = Movement.getPathAsFormattedCoordinates(beliefs.config?.map, { x: startX, y: startY }, { x, y });
             const movement = new Movement(this.socket);
             let startXAsString = 'x' + startX.toString();
@@ -141,9 +140,10 @@ class GoToPlan extends Plan {
                 startXAsString = x;
                 startYAsString = y;
             }
+            return !this.stopped;
         }
         else {
-            this.logger.info(`Adding information to the PDDL to solve move from ${startX},${startY} to ${x},${y}`)
+            this.logger.debug(`Adding information to the PDDL to solve move from ${startX},${startY} to ${x},${y}`)
             await this.goToPddl.addBelief(beliefs.config?.map, beliefs.me);
             await this.goToPddl.addGoal({ x, y });
             if (this.stopped) return false;
@@ -157,7 +157,7 @@ class GoToPlan extends Plan {
             this.logger.info("Executing plan");
             await this.goToPddl.executePlan(plan);
         } 
-        return !this.stopped;
+        return this.stopped;
     }
 }
 

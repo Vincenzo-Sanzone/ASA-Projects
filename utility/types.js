@@ -2,11 +2,12 @@ class Agent {
     /**
      * @param {import("@unitn-asa/deliveroo-js-sdk").IOAgent} sensedAgent - The agent data received from sensing.
      */
-    constructor(sensedAgent) {
+    constructor(sensedAgent, last = null) {
         this.id = sensedAgent.id;
         this.x = sensedAgent.x;
         this.y = sensedAgent.y;
         this.timestampSeen = Date.now();
+        this.last = last
     }
 }
 

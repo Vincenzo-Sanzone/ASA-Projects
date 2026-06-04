@@ -1,5 +1,5 @@
 import { Belief } from "../belief/belief.js";
-import { Movement, Parcel, Logger } from "../../utility/index.js";
+import { Movement, Parcel, Logger, Strategy } from "../../utility/index.js";
 
 //TODO fix the priority so it becames more balanced
 class Desires {
@@ -52,7 +52,7 @@ class Desires {
         if (distToParcel === Infinity) return -1;
         if (distToParcel === 0) return 900 + parcel.reward;
 
-        const estimatedReward = this.estimateRewardAfterSteps(parcel.reward, distToParcel, 50, this.clockEventToMs(belief.config.decayEvent));
+        const estimatedReward = this.estimateRewardAfterSteps(parcel.reward, distToParcel, 50, Strategy.clockEventToMs(belief.config.decayEvent));
         if (estimatedReward <= 10) return -1;
         if (distToParcel <= belief.config?.observationDistance) {
             this.logger.debug(`Parcel ${parcel.id} distance to me: ${distToParcel}, is within observation distance (${belief.config?.observationDistance})`);
@@ -104,8 +104,8 @@ class Desires {
 
         const { decayEvent, generationEvent, variance, average, maxParcels } = belief.config;
 
-        const decayTimeSec = this.clockEventToMs(decayEvent) / 1000;
-        const genTimeSec = this.clockEventToMs(generationEvent) / 1000;
+        const decayTimeSec = Strategy.clockEventToMs(decayEvent) / 1000;
+        const genTimeSec = Strategy.clockEventToMs(generationEvent) / 1000;
 
         // === Probabilità che un pacco nascosto sia ancora vivo ===
         const lifetime = average * decayTimeSec;
@@ -141,23 +141,6 @@ class Desires {
 
         // === Priorità finale (10-50) ===
         return priority + variance / 100;
-    }
-
-    /**
-     * Converte un IOClockEvent in millisecondi.
-     * @param {import("@unitn-asa/deliveroo-js-sdk").IOClockEvent | undefined} event - Es: '1s', 'frame', 'infinite'
-     * @returns {number} Tempo in millisecondi (o Infinity)
-     */
-    clockEventToMs(event) {
-        switch (event) {
-            case 'frame': return 50;     // 1 frame ≈ 50ms (1/20 di secondo, basato su CLOCK: 50)
-            case '1s': return 1000;
-            case '2s': return 2000;
-            case '5s': return 5000;
-            case '10s': return 10000;
-            case 'infinite': return Infinity;
-            default: return Infinity; // Valore sconosciuto
-        }
     }
 
     // ─── Helper condivisi ────────────────────────────────────────────────

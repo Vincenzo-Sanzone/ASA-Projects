@@ -1,6 +1,7 @@
 import { Movement } from "../utility/movement.js";
 import { Pddl } from "./pddl.js";
 import { GameMap } from "../utility/types.js";
+import { Strategy } from "../utility/strategy.js";
 
 class GoToPddl extends Pddl {
     constructor(socket, intention) {
@@ -108,21 +109,26 @@ class GoToPddl extends Pddl {
         const spawnPoints = Movement.getSpawnPoints(map);
         // Start solving problems for all pairs of spawn and delivery points to populate the cache with useful plans that can be reused during the game.
         for (const delivery of deliveryPoints) {
-            for (const spawn of spawnPoints) {
-                if (this.stopped) return;
-                await this.addBelief(map, delivery);
-                await this.addGoal(spawn);
-                await this.solve();
-            }
+            const spawn = Strategy.getBestSpawnTile(map, delivery);
+            if (this.stopped) return;
+            await this.addBelief(map, delivery);
+            await this.addGoal(spawn);
+            await this.solve();
+            this.logger.info(`Solved problem from (${delivery.x}, ${delivery.y}) to (${spawn.x}, ${spawn.y})`);
         }
         
         for (const spawn of spawnPoints) {
-            for (const delivery of deliveryPoints) {
-                if (this.stopped) return;
-                await this.addBelief(map, spawn);
-                await this.addGoal(delivery);
-                await this.solve();
-            }
+            const nearest = Movement.nearestDeliveryPoint(map, spawn);
+            if (this.stopped) return;
+            await this.addBelief(map, spawn);
+            await this.addGoal(nearest);
+            await this.solve();
+
+            const lookForParcel = Strategy.getBestSpawnTile(map, spawn);
+            if (this.stopped) return;
+            await this.addBelief(map, spawn);
+            await this.addGoal(lookForParcel);
+            await this.solve();
         }
     }
 }
