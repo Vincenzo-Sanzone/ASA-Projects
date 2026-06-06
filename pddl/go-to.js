@@ -3,11 +3,12 @@ import { Pddl } from "./pddl.js";
 import { GameMap } from "../utility/types.js";
 import { Strategy } from "../utility/strategy.js";
 import { IntentionDeliberation } from "../bdi-agent/intention/deliberation.js";
+import { Belief } from "../bdi-agent/belief/belief.js";
 
 class GoToPddl extends Pddl {
     constructor(socket, intention) {
         super(socket, "go-to", intention);
-        this.movement = new Movement(socket, this);
+        this.movement = new Movement(socket);
     }
 
     /**
@@ -20,12 +21,18 @@ class GoToPddl extends Pddl {
 
     /**
      * Adds a belief to the belief set. Subclasses must implement this method to define how beliefs are added.
-     * @param {GameMap} map - The game map to add to the belief set.
+     * @param {Belief} belief - The game map to add to the belief set.
      * @param { {x: number, y: number} } me - The position of the agent.
      */
-    async addBelief(map, me) {
+    addBelief(belief, me) {
+        const map = belief.config.map
         // Declare the position of the agent
         this.beliefset.declare(`agent x${me.x} y${me.y}`);        
+
+        // Declare the position of the crates
+        for (const crate of belief.crates) {
+            this.beliefset.declare(`crate x${crate.x} y${crate.y}`);
+        }
 
         // Declare the position of the walls and left up tiles
         for (let y=0; y < map.height; y++) {
@@ -45,6 +52,9 @@ class GoToPddl extends Pddl {
                 }
                 else if (value === '↓') {
                     this.beliefset.declare(`down-tile x${x} y${y}`);
+                }
+                else if (value === '5' || value === '5!') {
+                    this.beliefset.declare(`can-be-crate x${x} y${y}`);
                 }
 
 

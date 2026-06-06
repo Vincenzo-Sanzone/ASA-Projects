@@ -26,6 +26,17 @@ class Parcel {
     }
 }
 
+class Crates {
+    /**
+     * @param {*} sensedCrate - The crate data received from sensing.
+     */
+    constructor(sensedCrate) {
+        this.id = sensedCrate.id;
+        this.x = sensedCrate.x;
+        this.y = sensedCrate.y;
+    }
+}
+
 class GameMap {
     /**
      * @param {import("@unitn-asa/deliveroo-js-sdk/types/IOGameOptions.js").IOMapOptions} maps - The map data received from the server configuration.
@@ -45,7 +56,6 @@ class GameMap {
             }
             map += '\n';
         }
-        console.log(map);
     }
 }
 
@@ -67,4 +77,4 @@ class GameConfig {
     }
 }
 
-export { Agent, Parcel, GameMap, GameConfig };
+export { Agent, Parcel, Crates, GameMap, GameConfig };

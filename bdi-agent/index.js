@@ -43,6 +43,7 @@ const intentions = new IntentionsRevise(belief, planner);
 socket.onSensing((sensing) => {
     belief.updateParcel(sensing.parcels);
     belief.updateAgents(sensing.agents);
+    belief.updateCrates(sensing.crates);
     desires.generateDesires(belief);
     intentions.addIntentions(desires.desires);
 });
@@ -53,14 +54,16 @@ socket.onYou((me) => {
   intentions.addIntentions(desires.desires); 
 });
 
-socket.onConfig((config) => {belief.updateConfig(config); desires.generateDesires(belief); });
-
-const cachePopulator = new GoToPddl(null, null);
+socket.onConfig((config) => {belief.updateConfig(config);});
 
 socket.onMap(() => {
   Movement.invalidateCache(); 
   Pddl.clearCache();
-  cachePopulator.populateCache(belief.config.map);
+});
+
+socket.onDisconnect((reason) => {
+    console.log("[DEBUG] Disconnected from Deliveroo, shutting down...", reason);
+    process.exit(0);
 });
 
 intentions.loop();

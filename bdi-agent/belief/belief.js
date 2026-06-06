@@ -1,4 +1,4 @@
-import { Logger, Agent, Parcel, GameConfig, Movement, Strategy } from "../../utility/index.js";
+import { Logger, Agent, Parcel, GameConfig, Movement, Strategy, Crates } from "../../utility/index.js";
 
 class Belief {
     constructor() {
@@ -6,11 +6,22 @@ class Belief {
         this.enemies = []; // List of other agents with their id, x, y, timestampSeen
         this.config = null;
         this.parcels = []; // List of parcels with their id, position, reward, carriedBy, timestampSeen
+        this.crates = [] // List of crates with id and position
         this.isNeededReconsidering = false; // Flag to indicate if the belief needs to be reconsidered due to changes in the environment or new information received.
 
         this.logger = new Logger("Belief:");
     }
 
+    #initializeCrates() {
+        for (let x = 0; x < this.config.map.width; x++) {
+            for (let y = 0; y < this.config.map.height; y++) {
+                if (this.config.map.tiles[x][y].toString() === '5!') {
+                    this.crates.push(new Crates({ x, y }));
+                }
+            }
+        }
+    }    
+    
     /**
      * Update the belief about the agent itself.
      * @param {import("@unitn-asa/deliveroo-js-sdk").IOAgent} agent 
@@ -52,6 +63,28 @@ class Belief {
         const visibleIds = new Set(parcels.map(p => p.id));
         this.parcels = this.filterNotInViewObject(this.parcels, visibleIds);
         this.updateRewardParcel();
+    }
+
+    /**
+     * Update the belief about crates based on the sensing data.
+     * @param {*} crates - Crates sent by the server 
+     */
+    updateCrates(crates) {
+        if (crates.length === 0) return;
+        for (const c of crates) {
+            const crate = new Crates(c);
+            let existingCrateIndex = this.crates.findIndex(p => p.id === crate.id);
+            if (existingCrateIndex !== -1) {
+                this.crates[existingCrateIndex] = crate;
+                continue;
+            }
+            existingCrateIndex = this.crates.findIndex(p => p.x === crate.x && p.y === crate.y);
+            if (existingCrateIndex !== -1) {
+                this.crates[existingCrateIndex] = crate;
+                continue;
+            }
+            this.crates.push(crate);
+        }
     }
 
     /**
@@ -123,8 +156,10 @@ class Belief {
 
 
     updateConfig(config) {
+        console.log(`[DEBUG] updated config information. New config: ${config}`);
         // Update the belief about the game configuration based on the configuration information received. This can involve updating properties such as clock, capacity, decayEvent, and generationEvent based on the config data.
         this.config = new GameConfig(config);
+        this.#initializeCrates();
         this.logger.debug(`updated config information. New config: ${this.config}`);
     }
 

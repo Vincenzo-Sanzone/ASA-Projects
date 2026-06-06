@@ -6,6 +6,7 @@
         (agent ?x ?y)
         (wall ?x ?y)
         (crate ?x ?y)
+        (can-be-crate ?x ?y)
         (left-tile ?x ?y)
         (right-tile ?x ?y)
         (up-tile ?x ?y)
@@ -18,7 +19,7 @@
     )
     (:action push-left
         :parameters (?x1 ?x2 ?x3 ?y)
-        :precondition (and (agent ?x1 ?y) (crate ?x2 ?y) (not (wall ?x3 ?y)) (not (crate ?x3 ?y)) (left ?x3 ?x2) (left ?x2 ?x1) (not (right-tile ?x2 ?y)) (not (up-tile ?x2 ?y)) (not (down-tile ?x2 ?y)) (not (right-tile ?x3 ?y)) (not (up-tile ?x3 ?y)) (not (down-tile ?x3 ?y)))
+        :precondition (and (agent ?x1 ?y) (crate ?x2 ?y) (can-be-crate ?x3 ?y) (not (crate ?x3 ?y)) (left ?x3 ?x2) (left ?x2 ?x1))
         :effect (and (agent ?x2 ?y) (not (agent ?x1 ?y)) (crate ?x3 ?y) (not (crate ?x2 ?y)))
     )
     (:action move-up
@@ -28,7 +29,7 @@
     )
     (:action push-up
         :parameters (?x ?y1 ?y2 ?y3)
-        :precondition (and (agent ?x ?y1) (crate ?x ?y2) (not (wall ?x ?y3)) (not (crate ?x ?y3)) (up ?y3 ?y2) (up ?y2 ?y1) (not (right-tile ?x ?y2)) (not (left-tile ?x ?y2)) (not (down-tile ?x ?y2)) (not (right-tile ?x ?y3)) (not (left-tile ?x ?y3)) (not (down-tile ?x ?y3)))
+        :precondition (and (agent ?x ?y1) (crate ?x ?y2) (can-be-crate ?x ?y3) (not (crate ?x ?y3)) (up ?y3 ?y2) (up ?y2 ?y1))
         :effect (and (agent ?x ?y2) (not (agent ?x ?y1)) (crate ?x ?y3) (not (crate ?x ?y2)))
     )
     (:action move-right
@@ -38,7 +39,7 @@
     )
     (:action push-right
         :parameters (?x1 ?x2 ?x3 ?y)
-        :precondition (and (agent ?x1 ?y) (crate ?x2 ?y) (not (wall ?x3 ?y)) (not (crate ?x3 ?y)) (left ?x1 ?x2) (left ?x2 ?x3) (not (left-tile ?x2 ?y)) (not (up-tile ?x2 ?y)) (not (down-tile ?x2 ?y)) (not (left-tile ?x3 ?y)) (not (up-tile ?x3 ?y)) (not (down-tile ?x3 ?y)))
+        :precondition (and (agent ?x1 ?y) (crate ?x2 ?y) (can-be-crate ?x3 ?y) (not (crate ?x3 ?y)) (left ?x1 ?x2) (left ?x2 ?x3))
         :effect (and (agent ?x2 ?y) (not (agent ?x1 ?y)) (crate ?x3 ?y) (not (crate ?x2 ?y)))
     )
     (:action move-down
@@ -48,7 +49,7 @@
     )
     (:action push-down
         :parameters (?x ?y1 ?y2 ?y3)
-        :precondition (and (agent ?x ?y1) (crate ?x ?y2) (not (wall ?x ?y3)) (not (crate ?x ?y3)) (up ?y1 ?y2) (up ?y2 ?y3) (not (right-tile ?x ?y2)) (not (up-tile ?x ?y2)) (not (left-tile ?x ?y2)) (not (right-tile ?x ?y3)) (not (up-tile ?x ?y3)) (not (left-tile ?x ?y3)))
+        :precondition (and (agent ?x ?y1) (crate ?x ?y2) (can-be-crate ?x ?y3) (not (crate ?x ?y3)) (up ?y1 ?y2) (up ?y2 ?y3))
         :effect (and (agent ?x ?y2) (not (agent ?x ?y1)) (crate ?x ?y3) (not (crate ?x ?y2)))
     )
 )

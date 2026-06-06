@@ -18,7 +18,7 @@ class Strategy {
 
         const clusters = clustersRaw.map(c =>Strategy.#analyzeCluster(map, c, me));
 
-        let best = null;
+        let best = clusters[0];
         let bestScore = -Infinity;
 
         for (const cluster of clusters) {
