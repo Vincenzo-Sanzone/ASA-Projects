@@ -1,7 +1,6 @@
 import { DjsClientSocket } from "@unitn-asa/deliveroo-js-sdk";
 import { IntentionDeliberation } from "../intention/deliberation.js";
-import { GoToPddl } from "../../pddl/go-to.js";
-import { Logger, Movement } from "../../utility/index.js";
+import { Logger } from "../../utility/index.js";
 /**
  * Planner class: Finds and manages plans to achieve intentions.
  * Uses a library of plan classes (e.g., GoToPlan, PickUpPlan) to match intentions to actions.
@@ -89,80 +88,4 @@ class Plan {
     stop() { this.stopped = true; }
 }
 
-/**
- * Plan to move the agent to a specific (x, y) coordinate.
- * Used as a sub-plan by other plans (e.g., PickUpPlan, DeliverPlan).
- */
-class GoToPlan extends Plan {
-    constructor(intention, socket) {
-        super(intention, socket);
-        this.logger = new Logger("GoToPlan:");
-        this.goToPddl = new GoToPddl(this.socket, this.intention);
-    }
-
-    static isApplicable(action) {
-        return false; // This plan is not directly applicable; it's used as a sub-plan.
-    }
-
-    stop() {
-        super.stop();
-        this.goToPddl.stop();
-    }
-
-    async execute(x, y) {
-        this.logger.debug(`Moving to (${x}, ${y})`);
-        const { beliefs } = this.intention;
-
-        const startX = beliefs.me.x;
-        const startY = beliefs.me.y;
-
-        // Avoid infinite loops if already at the target
-        if (startX === x && startY === y) {
-            return true;
-        }
-
-        const distance = Movement.getDistance(beliefs.config?.map, { x: startX, y: startY }, { x, y });
-        if (distance <= 5) {
-            this.logger.info(`Close enough to (${x}, ${y}), using direct move for a total of ${distance} steps`);
-            const moves = Movement.getPathAsFormattedCoordinates(beliefs.config?.map, { x: startX, y: startY }, { x, y });
-            const movement = new Movement(this.socket);
-            let startXAsString = 'x' + startX.toString();
-            let startYAsString = 'y' + startY.toString();
-            for (const move of moves) {
-                const [x, y] = move.split(' ');
-                //Get start x and y as string
-
-                if (startXAsString === x && startYAsString === y) {
-                    continue;
-                }
-                await movement.moveTo({ x: startXAsString, y: startYAsString }, { x, y }, this.intention.beliefs);
-                if(this.stopped) return false;
-                startXAsString = x;
-                startYAsString = y;
-            }
-        }
-        else {
-            this.logger.debug(`Adding information to the PDDL to solve move from ${startX},${startY} to ${x},${y}`)
-            await this.goToPddl.addBelief(beliefs.config?.map, beliefs.me);
-            await this.goToPddl.addGoal({ x, y });
-            if (this.stopped) return false;
-            const plan = await this.goToPddl.solve();
-            if (!plan) {
-                this.logger.error(`No plan found to go to (${x}, ${y})`);
-                return false;
-            }
-
-            if(this.stopped) return false; 
-            this.logger.info("Executing plan");
-            await this.goToPddl.executePlan(plan);
-        } 
-        return this.stopped;
-    }
-}
-
-
-export {
-    Planner,
-    Plan,
-    GoToPlan
-};
+export { Planner, Plan };

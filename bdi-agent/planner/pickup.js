@@ -1,5 +1,6 @@
-import { Plan, GoToPlan } from "./planner.js";
+import { Plan } from "./planner.js";
 import { Logger, executeUntilDone } from "../../utility/index.js";
+import { GoToPlan } from "./go-to.js";
 
 /**
  * Plan to pick up a specific parcel.

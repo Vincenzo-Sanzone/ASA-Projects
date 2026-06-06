@@ -1,5 +1,7 @@
-import { Plan, GoToPlan } from "./planner.js";
+import { Plan } from "./planner.js";
 import { Logger, Strategy } from "../../utility/index.js";
+import { GoToPlan } from "./go-to.js";
+
 /**
  * Plan to look for new parcels by moving to a random walkable tile.
  * Useful when no parcels are visible.

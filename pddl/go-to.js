@@ -2,11 +2,12 @@ import { Movement } from "../utility/movement.js";
 import { Pddl } from "./pddl.js";
 import { GameMap } from "../utility/types.js";
 import { Strategy } from "../utility/strategy.js";
+import { IntentionDeliberation } from "../bdi-agent/intention/deliberation.js";
 
 class GoToPddl extends Pddl {
     constructor(socket, intention) {
         super(socket, "go-to", intention);
-        this.movement = new Movement(socket);
+        this.movement = new Movement(socket, this);
     }
 
     /**
@@ -131,6 +132,8 @@ class GoToPddl extends Pddl {
             await this.solve();
         }
     }
+
+    
 }
 
 export { GoToPddl };

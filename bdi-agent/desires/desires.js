@@ -48,7 +48,7 @@ class Desires {
      */
     calculatePickUpPriority(parcel, belief) {
         const me = { x: belief.me.x, y: belief.me.y };
-        const distToParcel = Movement.getDistance(belief.config.map, me, { x: parcel.x, y: parcel.y });
+        const distToParcel = Movement.getDistance(belief.config.map, me, { x: parcel.x, y: parcel.y }, belief.enemies);
         if (distToParcel === Infinity) return -1;
         if (distToParcel === 0) return 900 + parcel.reward;
 
@@ -132,7 +132,7 @@ class Desires {
             if (emptySpawnPoints.length > 0) {
                 const distToSpawn = Math.min(
                     ...emptySpawnPoints.map(sp =>
-                        Movement.getDistance(belief.config.map, { x: belief.me.x, y: belief.me.y }, sp)
+                        Movement.getDistance(belief.config.map, { x: belief.me.x, y: belief.me.y }, sp, belief.enemies)
                     )
                 );
                 priority += 50 / (distToSpawn + 1); // Bonus se spawn point vicino

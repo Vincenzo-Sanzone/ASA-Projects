@@ -39,12 +39,7 @@ class Movement {
             return;
         }
 
-        let finalX, finalY;
-        var waitForCompleteMove = new Promise(res => this.socket.onYou(m =>{
-            finalX = m.x;
-            finalY = m.y;
-            m.x % 1 != 0 || m.y % 1 != 0 ? null : res();
-        }));
+
 
         let move = ""
         // Check if we have to move left
@@ -68,185 +63,159 @@ class Movement {
             move = "down";
         }
 
+        // Check if the move is valid, else wait for 1.5 seconds
         if (Strategy.isValidMove(belief.config?.map, { x: xStart, y: yStart }, { x: xTarget, y: yTarget }, belief)) {
-            await executeUntilDone((...args) => this.socket.emitMove(...args), move);
-            await waitForCompleteMove
-            if (finalX !== xTarget || finalY !== yTarget) {
-                this.logger.info("We moved but didn't reach the target position");
-                this.stopped = true;
-            }
+            await this.#doMove(move, { x: xTarget, y: yTarget });
         } else {
-            this.logger.info("Invalid move, try to find a new path to the target");
-            this.stopped = true;
+            this.logger.info("Move is not valid, waiting 1.5 seconds");
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            if (this.stopped) return;
+            if (Strategy.isValidMove(belief.config?.map, { x: xStart, y: yStart }, { x: xTarget, y: yTarget }, belief)) {
+                await this.#doMove(move, { x: xTarget, y: yTarget });
+            }
+            else this.stop();
         }
     }
 
     /**
-     * Calculates the shortest distance (in terms of number of steps) between two points on the map, taking into account walls and directional arrows.
-     * @param {GameMap} map - The game map containing the layout of tiles, walls, and directional arrows.
-     * @param { {x: number, y:number} } start - Starting coordinates of the agent.
-     * @param { {x: number, y:number} } target - Target coordinates to move to.
-     * @returns {number} Shortest distance (in terms of number of steps) or `Infinity` if not reachable.
+     * Do the move, if the movement is not complete, it will stop.
+     * @param {String} move - The move to make.
+     * @param { {x: number, y:number} } param1 - The target position. 
      */
-    static getDistance(map, start, target) {
-        if (start.x % 1 != 0 || start.y % 1 != 0 || target.x % 1 != 0 || target.y % 1 != 0) {
-            return Infinity;
+    async #doMove(move, { x, y }) {
+        let finalX, finalY;
+        var waitForCompleteMove = new Promise(res => this.socket.onYou(m => {
+            finalX = m.x;
+            finalY = m.y;
+            m.x % 1 != 0 || m.y % 1 != 0 ? null : res();
+        }));
+
+        await executeUntilDone((...args) => this.socket.emitMove(...args), move);
+        await waitForCompleteMove
+
+        if (finalX !== x || finalY !== y) {
+            this.logger.info("We moved but didn't reach the target position");
+            this.stop();
         }
-        const height = map.height;
-        const width = map.width;
-        const cacheKey = `${start.x},${start.y}-${target.x},${target.y}`;
-        if (this.#distanceCache.has(cacheKey)) {
-            return this.#distanceCache.get(cacheKey);
-        }
-
-        // Check if start and target are within the map boundaries
-        if (
-            start.x < 0 || start.x >= width || start.y < 0 || start.y >= height ||
-            target.x < 0 || target.x >= width || target.y < 0 || target.y >= height
-        ) {
-            return Infinity;
-        }
-
-        // Check if start or target are walls
-        if (map.tiles[start.x][start.y] === '0' || map.tiles[target.x][target.y] === '0') {
-            return Infinity;
-        }
-
-        // Define possible movements and their required tile types (for directional arrows)
-        const directions = [
-            { dx: 0, dy: 1, requiredTile: '↑' }, // Up: the destination cell (y+1) must be '↑'
-            { dx: 0, dy: -1, requiredTile: '↓' }, // Down: the destination cell (y-1) must be '↓'
-            { dx: 1, dy: 0, requiredTile: '→' }, // Right: the destination cell (x+1) must be '→'
-            { dx: -1, dy: 0, requiredTile: '←' }  // Left: the destination cell (x-1) must be '←'
-        ];
-
-        // Apply BFS to find the shortest path from start to target
-        const queue = [{ x: start.x, y: start.y, steps: 0 }];
-        const visited = new Set([`${start.x},${start.y}`]);
-
-        while (queue.length > 0) {
-            const { x, y, steps } = queue.shift();
-
-            // We reached the target
-            if (x === target.x && y === target.y) {
-                this.#distanceCache.set(cacheKey, steps);
-                return steps;
-            }
-
-            // Explore neighbors
-            for (const { dx, dy, requiredTile } of directions) {
-                const newX = x + dx;
-                const newY = y + dy;
-                const key = `${newX},${newY}`;
-
-                // Skip if out of bounds or already visited
-                if (
-                    newX < 0 || newX >= width ||
-                    newY < 0 || newY >= height ||
-                    visited.has(key)
-                ) {
-                    continue;
-                }
-
-                const tile = map.tiles[newX][newY];
-                // Check if the tile is a wall
-                if (tile.toString() === '0') {
-                    continue;
-                }
-
-                // Check if the tile is a directional arrow that does not allow movement in the intended direction
-                if (['↑', '↓', '→', '←'].includes(tile.toString()) && tile.toString() !== requiredTile) {
-                    continue;
-                }
-
-                // Mark the new position as visited and add it to the queue
-                visited.add(key);
-                queue.push({ x: newX, y: newY, steps: steps + 1 });
-            }
-        }
-
-        // If we exhaust the queue without reaching the target, it means it's not reachable
-        this.#distanceCache.set(cacheKey, Infinity);
-        return Infinity;
     }
 
     /**
-     * Calculates the shortest distance (in terms of number of steps) between two points on the map, taking into account walls and directional arrows.
-     * @param {GameMap} map - The game map containing the layout of tiles, walls, and directional arrows.
-     * @param { {x: number, y: number} } start - Starting coordinates of the agent.
-     * @param { {x: number, y: number} } target - Target coordinates to move to.
-     * @returns {Array<string>|null} Path as an array of formatted coordinates, or null if not reachable.
+     * 
+     * @param {GameMap} map 
+     * @param {{x: number, y: number}} start 
+     * @param {{x: number, y: number}} target 
+     * @returns 
      */
-    static getPathAsFormattedCoordinates(map, start, target) {
-        // Check if start and target are integers
-        if (start.x % 1 != 0 || start.y % 1 != 0 || target.x % 1 != 0 || target.y % 1 != 0) return null;
-
-        const height = map.height;
+    static aStar(map, start, target, enemies) {
         const width = map.width;
+        const height = map.height;
 
-        // Check if start and target are within the map boundaries
-        if (start.x < 0 || start.x >= width || start.y < 0 || start.y >= height || target.x < 0 || target.x >= width || target.y < 0 || target.y >= height) return null;
+        const key = (x, y) => `${x},${y}`;
 
-        // Check if start or target is a wall
-        if (map.tiles[start.x][start.y] === '0' || map.tiles[target.x][target.y] === '0') return null;
+        const heuristic = (x, y) => {
+            // Manhattan distance (perfetta per griglia 4-direzioni)
+            return Math.abs(x - target.x) + Math.abs(y - target.y);
+        };
 
         const directions = [
-            { dx: 0, dy: 1, requiredTile: '↑' }, // Up
-            { dx: 0, dy: -1, requiredTile: '↓' },  // Down
-            { dx: 1, dy: 0, requiredTile: '→' },  // Right
-            { dx: -1, dy: 0, requiredTile: '←' }  // Left
+            { dx: 0, dy: 1, requiredTile: '↑' },
+            { dx: 0, dy: -1, requiredTile: '↓' },
+            { dx: 1, dy: 0, requiredTile: '→' },
+            { dx: -1, dy: 0, requiredTile: '←' }
         ];
 
-        const queue = [{ x: start.x, y: start.y, path: [`x${start.x} y${start.y}`] }];
-        const visited = new Set([`${start.x},${start.y}`]);
+        const openSet = new Set([key(start.x, start.y)]);
+        const cameFrom = new Map();
 
-        while (queue.length > 0) {
-            const { x, y, path } = queue.shift();
+        const gScore = new Map();
+        const fScore = new Map();
 
-            // We reached the target
-            if (x === target.x && y === target.y) {
-                return path;
+        gScore.set(key(start.x, start.y), 0);
+        fScore.set(key(start.x, start.y), heuristic(start.x, start.y));
+
+        while (openSet.size > 0) {
+
+            // trova nodo con fScore minimo
+            let current = null;
+            let bestF = Infinity;
+
+            for (const k of openSet) {
+                const f = fScore.get(k) ?? Infinity;
+                if (f < bestF) {
+                    bestF = f;
+                    current = k;
+                }
             }
 
-            // Explore neighbors
+            const [cx, cy] = current.split(',').map(Number);
+
+            if (cx === target.x && cy === target.y) {
+                return this.#reconstructPath(cameFrom, current);
+            }
+
+            openSet.delete(current);
+
+            const currentG = gScore.get(current);
+
             for (const { dx, dy, requiredTile } of directions) {
-                const newX = x + dx;
-                const newY = y + dy;
-                const key = `${newX},${newY}`;
 
-                // Skip if out of bounds or already visited
-                if (
-                    newX < 0 || newX >= width ||
-                    newY < 0 || newY >= height ||
-                    visited.has(key)
-                ) {
-                    continue;
+                const nx = cx + dx;
+                const ny = cy + dy;
+                const nKey = key(nx, ny);
+
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+
+                const tile = map.tiles[nx][ny];
+
+                if (tile.toString() === '0') continue;
+                if (enemies) {
+                    for (const enemy of enemies) {
+                        if (enemy.x % 1 !== 0 && (Math.floor(enemy.x) === nx || Math.ceil(enemy.x) === nx) && enemy.y === ny) continue;
+                        if (enemy.y % 1 !== 0 && (Math.floor(enemy.y) === ny || Math.ceil(enemy.y) === ny) && enemy.x === nx) continue;
+                        if (enemy.x === nx && enemy.y === ny) continue;
+                    }
                 }
 
-                const tile = map.tiles[newX][newY];
-                // Skip if it's a wall
-                if (tile.toString() === '0') {
-                    continue;
-                }
+                if (['↑', '↓', '→', '←'].includes(tile.toString()) && tile.toString() !== requiredTile) continue;
 
-                // Skip if the tile is a directional arrow that does not allow movement in the intended direction
-                if (['↑', '↓', '→', '←'].includes(tile.toString()) && tile.toString() !== requiredTile) {
-                    continue;
-                }
+                const tentativeG = currentG + 1;
 
-                // Add the new position to the queue
-                visited.add(key);
-                queue.push({
-                    x: newX,
-                    y: newY,
-                    path: [...path, `x${newX} y${newY}`] // Add the new position to the path
-                });
+                if (tentativeG < (gScore.get(nKey) ?? Infinity)) {
+
+                    cameFrom.set(nKey, current);
+
+                    gScore.set(nKey, tentativeG);
+                    fScore.set(nKey, tentativeG + heuristic(nx, ny));
+
+                    openSet.add(nKey);
+                }
             }
         }
 
-        // Se la coda è vuota e non abbiamo trovato il target, restituisci null
         return null;
     }
+
+    static #reconstructPath(cameFrom, current) {
+        const path = [current];
+
+        while (cameFrom.has(current)) {
+            current = cameFrom.get(current);
+            path.push(current);
+        }
+
+        path.reverse().slice(1);
+        for (let i = 0; i < path.length; i++) {
+            const [x, y] = path[i].split(',').map(Number);
+            path[i] = `x${x} y${y}`;
+        }
+        return path;
+    }
+
+    static getDistance(map, start, target, enemies) {
+        const path = this.aStar(map, start, target, enemies);
+        return path ? path.length : Infinity;
+    }
+
     /**
      * Calculates the shortest distance (in terms of number of steps) between two points on the map, taking into account walls and directional arrows.
      * @param {GameMap} map - The game map containing the layout of tiles, walls, and directional arrows.
