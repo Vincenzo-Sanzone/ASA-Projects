@@ -1,5 +1,5 @@
 import { Belief } from "../belief/belief.js";
-import { Movement, Parcel, Logger, Strategy } from "../../utility/index.js";
+import { Movement, Parcel, Logger, Strategy, Mission } from "../../utility/index.js";
 
 //TODO fix the priority so it becames more balanced
 class Desires {
@@ -31,12 +31,29 @@ class Desires {
         // Generate look for parcel desires. Low priority, so it is done only if there are no pickup or delivery desires, and it is useful to update the belief about parcels that may have changed since the last sensing.
         this.desires.push({ type: 'lookForParcel', priority: this.calculateLookForParcelPriority(belief) });
 
+        if (belief.thereIsAtomicMission) {
+            for (const mission of belief.missions) {
+                if (!mission.persistent) {
+                    this.desires.push({ type: 'mission', mission: mission, priority: this.calculateMissionPriority(mission, belief) });
+                }
+            }
+        }
         // Delete desires with non-positive priority, as they are not worth pursuing.
         this.desires = this.desires.filter(desire => desire.priority > 0);
 
         // Sort desires by priority in descending order, so that the most important desires are pursued first.
         this.desires.sort((a, b) => b.priority - a.priority);
         this.desires.forEach(desire => this.logger.debug(`Desire: ${desire.type}, Priority: ${desire.priority}`));
+    }
+
+    /**
+     * 
+     * @param {Mission} mission 
+     * @param {Belief} belief 
+     */
+    calculateMissionPriority(mission, belief) {
+        // TODO fix priority, for the moment we want to test mission.
+        return 100000;
     }
 
     /**

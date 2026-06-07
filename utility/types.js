@@ -77,4 +77,12 @@ class GameConfig {
     }
 }
 
-export { Agent, Parcel, Crates, GameMap, GameConfig };
+class Mission {
+    constructor(type, persistent, args = {}) {
+        this.type = type;
+        this.persistent = persistent
+        this.args = args
+    }
+}
+
+export { Agent, Parcel, Crates, GameMap, GameConfig, Mission };

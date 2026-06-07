@@ -5,7 +5,7 @@ import { Desires } from "./desires/desires.js";
 import { Movement } from "../utility/index.js";
 import { IntentionsRevise } from "./intention/revise.js";
 import { Planner } from "./planner/planner.js";
-import { PickUpPlan, LookForParcelPlan, DeliverPlan } from "./planner/index.js";
+import { PickUpPlan, LookForParcelPlan, DeliverPlan, MissionPlan } from "./planner/index.js";
 import { Pddl } from "../pddl/index.js";
 
 
@@ -19,6 +19,7 @@ class BDIAgent {
     this.planner.registerPlan(PickUpPlan);
     this.planner.registerPlan(LookForParcelPlan);
     this.planner.registerPlan(DeliverPlan);
+    this.planner.registerPlan(MissionPlan);
     this.intentions = new IntentionsRevise(this.belief, this.planner);
   }
 

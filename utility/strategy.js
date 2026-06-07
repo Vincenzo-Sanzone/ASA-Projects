@@ -3,6 +3,53 @@ import { Belief } from "../bdi-agent/belief/belief.js";
 
 class Strategy {
 
+    static getDeliveryWithCoordinate(map, me, args = {}) {
+        if (args.x === null || args.y === null) return null;
+
+        const isX = args.x !== null
+
+        if (isX) {
+            for (let y = 0; y < map.height; y++) {
+                if (map.tiles[args.x][y] === '1') {
+                    return { x: args.x, y };
+                }
+            }
+            // We could not find a delivery point with the given coordinates, so we return the nearest tile with the coordinate x
+            let bestDist = Infinity;
+            let bestTile = null;
+            for (let y = 0; y < map.height; y++) {
+                if (map.tiles[args.x][y] !== '0') {
+                    const distance = Movement.getDistance(map, me, { x: args.x, y });
+                    if (distance < bestDist) {
+                        bestDist = distance;
+                        bestTile = { x: args.x, y };
+                    }
+                }
+            }
+            return bestTile;
+        }
+        else {
+            for (let x = 0; x < map.width; x++) {
+                if (map.tiles[x][args.y] === '1') {
+                    return { x, y: args.y };
+                }
+            }
+            // We could not find a delivery point with the given coordinates, so we return the nearest tile with the coordinate y
+            let bestDist = Infinity;
+            let bestTile = null;
+            for (let x = 0; x < map.width; x++) {
+                if (map.tiles[x][args.y] !== '0') {
+                    const distance = Movement.getDistance(map, me, { x, y: args.y });
+                    if (distance < bestDist) {
+                        bestDist = distance;
+                        bestTile = { x, y: args.y };
+                    }
+                }
+            }
+            return bestTile;
+        }
+    }
+
     /**
      * Choose the best spawn tile to move to based on a scoring system that considers both delivery potential and exploration potential.
      * @param {GameMap} map - The map of the environment, used to calculate distances and identify walkable tiles.
@@ -13,10 +60,10 @@ class Strategy {
         const spawnTiles = Movement.getSpawnPoints(map);
 
         if (spawnTiles.length === 0) return false;
-        
+
         const clustersRaw = Movement.getSpawnClusters(map, spawnTiles, 3);
 
-        const clusters = clustersRaw.map(c =>Strategy.#analyzeCluster(map, c, me));
+        const clusters = clustersRaw.map(c => Strategy.#analyzeCluster(map, c, me));
 
         let best = clusters[0];
         let bestScore = -Infinity;
@@ -27,7 +74,7 @@ class Strategy {
             const deliveryScore = Strategy.#scoreDelivery(cluster);
 
             // Score based on exploration potential: how many new tiles could we explore by going to this cluster and how far it is from other clusters (to maximize coverage)
-            const explorationScore = Strategy.#scoreExploration(cluster,clustersRaw,map);
+            const explorationScore = Strategy.#scoreExploration(cluster, clustersRaw, map);
 
             const score = deliveryScore > -Infinity ? deliveryScore : explorationScore;
 
@@ -64,7 +111,7 @@ class Strategy {
      */
     static isValidMove(map, start, target, belief) {
         if (!Movement.isReachable(map, start, target)) return false;
-        
+
         for (const enemy of belief.enemies) {
             if (target.x === enemy.x && target.y === enemy.y) return false;
         }
@@ -142,4 +189,4 @@ class Strategy {
     }
 }
 
-export {Strategy};
+export { Strategy };

@@ -15,7 +15,7 @@ class LLMAgent {
         this.caller = new Caller(this.client, this.MODEL)
         this.bdi = new BDIAgent(token)
 
-        this.handler = new MessageHandler(this.caller, this.bdi.socket)
+        this.handler = new MessageHandler(this.caller, this.bdi)
     }
 
     #listenToMessages() {

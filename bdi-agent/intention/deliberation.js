@@ -32,6 +32,9 @@ class IntentionDeliberation {
         if (desire.type === 'pickup' && desire.parcelId) {
             predicate.push(desire.parcelId);
         }
+        if (desire.type === 'mission' && desire.mission) {
+            predicate.push(desire.mission);
+        }
         return predicate;
     }
 

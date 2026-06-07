@@ -10,7 +10,7 @@ async function executeUntilDone(fn, ...args) {
             return await fn(...args);
         } catch (error) {
             console.log('[DEBUG] Error:', error);
-            await sleep(100);
+            await sleep(3000);
         }
     }
 }

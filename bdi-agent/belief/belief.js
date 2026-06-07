@@ -1,4 +1,4 @@
-import { Logger, Agent, Parcel, GameConfig, Movement, Strategy, Crates } from "../../utility/index.js";
+import { Logger, Agent, Parcel, GameConfig, Movement, Strategy, Crates, Mission } from "../../utility/index.js";
 
 class Belief {
     constructor() {
@@ -6,7 +6,9 @@ class Belief {
         this.enemies = []; // List of other agents with their id, x, y, timestampSeen
         this.config = null;
         this.parcels = []; // List of parcels with their id, position, reward, carriedBy, timestampSeen
-        this.crates = [] // List of crates with id and position
+        this.crates = []; // List of crates with id and position
+        this.missions = []; // List of missions 
+        this.thereIsAtomicMission = false;
         this.isNeededReconsidering = false; // Flag to indicate if the belief needs to be reconsidered due to changes in the environment or new information received.
 
         this.logger = new Logger("Belief:");
@@ -165,6 +167,25 @@ class Belief {
 
     removeNeedToReconsider() {
         this.isNeededReconsidering = false;
+    }
+
+    /**
+     * 
+     * @param {Mission} mission 
+     */
+    addMission(mission) {
+        if (!mission.persistent) this.thereIsAtomicMission = true; 
+        this.missions.push(mission);
+    }
+
+    /**
+     * 
+     * @param {Mission} mission 
+     */
+    removeMission(mission) {
+        this.missions = this.missions.filter(m => m !== mission);
+
+        this.thereIsAtomicMission = this.missions.some(m => !m.persistent);
     }
 }
 
