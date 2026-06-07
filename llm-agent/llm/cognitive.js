@@ -19,6 +19,12 @@ class Cognitive {
 
         const response = await this.caller.callModel(messages)
 
+        this.logger.debug(`Response is: ${response}`);
+
+        if (response.startsWith("Calculator:")) {
+            const expr = response.slice("Calculator:".length).trim()
+            return String(eval(expr))
+        }
         return response
     }
 }

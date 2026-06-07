@@ -5,7 +5,7 @@ import { Logger } from "../../utility/index.js";
 class Router {
 
     /**
-     * 
+     * Class Router that routes a message to a tool or a cognitive mission
      * @param {Caller} caller 
      */
     constructor(caller) {
@@ -14,6 +14,11 @@ class Router {
         this.logger = new Logger("Router:");
     }
 
+    /**
+     * Call the LLM to route the message
+     * @param {String} message 
+     * @returns {Promise<String>} The type of the message
+     */
     async route(message) {
         const messages = this.caller.createMessage(PARSER_PROMPT, message)
 

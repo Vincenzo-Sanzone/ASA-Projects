@@ -5,6 +5,8 @@ Answer the question accurately and concisely.
 
 Do NOT use tools.
 Do NOT output JSON.
+Do NOT explain.
+If the message contains a calculator expression, then answer with Calculator: <expression>.
 
 Question:
 {message}
