@@ -6,64 +6,54 @@ import { Movement } from "../utility/index.js";
 import { IntentionsRevise } from "./intention/revise.js";
 import { Planner } from "./planner/planner.js";
 import { PickUpPlan, LookForParcelPlan, DeliverPlan } from "./planner/index.js";
-import { Pddl, GoToPddl } from "../pddl/index.js";
+import { Pddl } from "../pddl/index.js";
 
 
-// Salva il metodo originale
-const originalConsoleLog = console.log;
+class BDIAgent {
 
-// Sovrascrivi console.log
-console.log = (...args) => {
-  // Controlla se il primo argomento è un log "tuo" (ha il formato atteso)
-  const firstArg = args[0];
-  if (
-    typeof firstArg === 'string' &&
-    firstArg.includes('[') && // Contiene le parentesi del timestamp/level
-    firstArg.includes(']') &&
-    (firstArg.includes('[DEBUG]') ||
-     firstArg.includes('[INFO]') ||
-     firstArg.includes('[WARN]') ||
-     firstArg.includes('[ERROR]'))
-  ) {
-    // Mostra solo i tuoi log
-    originalConsoleLog(...args);
+  constructor(token) {
+    this.socket = DjsConnect(process.env.HOST, token);
+    this.belief = new Belief();
+    this.desires = new Desires();
+    this.planner = new Planner(this.socket);
+    this.planner.registerPlan(PickUpPlan);
+    this.planner.registerPlan(LookForParcelPlan);
+    this.planner.registerPlan(DeliverPlan);
+    this.intentions = new IntentionsRevise(this.belief, this.planner);
   }
-  // Ignora tutto il resto (log delle librerie)
-};
 
-const socket = DjsConnect(process.env.HOST, process.env.TOKEN);
-const belief = new Belief();
-const desires = new Desires();
-const planner = new Planner(socket);
-planner.registerPlan(PickUpPlan);
-planner.registerPlan(LookForParcelPlan);
-planner.registerPlan(DeliverPlan);
-const intentions = new IntentionsRevise(belief, planner);
+  #startSensing() {
+    this.socket.onSensing((sensing) => {
+      this.belief.updateParcel(sensing.parcels);
+      this.belief.updateAgents(sensing.agents);
+      this.belief.updateCrates(sensing.crates);
+      this.desires.generateDesires(this.belief);
+      this.intentions.addIntentions(this.desires.desires);
+    });
 
-socket.onSensing((sensing) => {
-    belief.updateParcel(sensing.parcels);
-    belief.updateAgents(sensing.agents);
-    belief.updateCrates(sensing.crates);
-    desires.generateDesires(belief);
-    intentions.addIntentions(desires.desires);
-});
+    this.socket.onYou((me) => {
+      this.belief.updateMe(me);
+      this.desires.generateDesires(this.belief);
+      this.intentions.addIntentions(this.desires.desires);
+    });
 
-socket.onYou((me) => {
-  belief.updateMe(me);
-  desires.generateDesires(belief);
-  intentions.addIntentions(desires.desires); 
-});
+    this.socket.onConfig((config) => { this.belief.updateConfig(config); });
 
-socket.onConfig((config) => {belief.updateConfig(config);});
+    this.socket.onMap(() => {
+      Movement.invalidateCache();
+      Pddl.clearCache();
+    });
 
-socket.onMap(() => {
-  Movement.invalidateCache(); 
-  Pddl.clearCache();
-});
+    this.socket.onDisconnect((reason) => {
+      console.log("[DEBUG] Disconnected from Deliveroo, shutting down...", reason);
+      process.exit(0);
+    });
+  }
 
-socket.onDisconnect((reason) => {
-    console.log("[DEBUG] Disconnected from Deliveroo, shutting down...", reason);
-    process.exit(0);
-});
+  startAgent() {
+    this.#startSensing();
+    this.intentions.loop();
+  }
+}
 
-intentions.loop();
+export { BDIAgent };
