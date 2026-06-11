@@ -1,8 +1,8 @@
-import { MISSION_PARSER_PROMPT } from "../prompts/prompts.js";
+import { MISSION_PARSER_PROMPT, LEVEL_1_PROMPT } from "../prompts/prompts.js";
 import { Caller } from "../utility/index.js";
 import { Logger } from "../../utility/index.js";
 
-class Mission {
+class MissionParser {
 
     /**
      * Class Router that routes a message to a tool or a cognitive mission
@@ -11,7 +11,7 @@ class Mission {
     constructor(caller) {
         this.caller = caller
 
-        this.logger = new Logger("Mission:");
+        this.logger = new Logger("MissionParser:");
     }
 
     /**
@@ -26,6 +26,12 @@ class Mission {
 
         return response
     }
+
+    async solveLevelOne(message) {
+        const messages = this.caller.createMessage(LEVEL_1_PROMPT, message)
+        const response = await this.caller.callJSONResponse(messages)
+        return response
+    }
 }
 
-export { Mission }
+export { MissionParser }

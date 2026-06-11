@@ -1,57 +1,79 @@
 import { BDIAgent } from "../../bdi-agent/index.js";
 import { Logger, Mission } from "../../utility/index.js";
+import { MissionParser } from "../llm/mission.js";
 
 class Strategy {
     /**
      * 
      * @param {BDIAgent} bdi 
      */
-    constructor(bdi) {
+    constructor(bdi, caller) {
         this.bdi = bdi;
+        this.parser = new MissionParser(caller);
+
+        this.tools = {
+            move: this.move,
+            moveMost: this.moveMost
+        };
         this.logger = new Logger("Strategy:");
     }
 
 
-    async solve(response){
-        if (response.type === "TYPE_1") await this.#solveAtomic(response)
-        else if (response.type === "TYPE_2") await this.#solvePersistent(response)
-        else if (response.type === "TYPE_3") await this.#solveCoordination(response)
-        else this.logger.error(`Mission parser answered with unknown type: ${response.type}`);
+    async solve(message) {
+        const missionLevel = await this.parser.route(message)
+
+        if (missionLevel === "TYPE_1") await this.#solveAtomic(message)
+        else if (missionLevel === "TYPE_2") await this.#solvePersistent(message)
+        else if (missionLevel === "TYPE_3") await this.#solveCoordination(message)
+        else this.logger.error(`Mission parser answered with unknown mission level: ${missionLevel}`);
     }
 
-    async #solveAtomic(response) {
+    async #solveAtomic(message) {
+        const response = await this.parser.solveLevelOne(message);
+        console.log("[DEBUG] Solving atomic mission", JSON.stringify(message, null, 2));
         // If we don't have a reward, then we don't need to do anything
-        if(response.rewards.value <= 0) return;
-
-        let mission = null;
-        if (response.actions[0].tool === "move") {
-            let x,y = 0;
-            if (response.actions[0].args.x_expr && response.actions[0].args.y_expr) {
-                x = eval(response.actions[0].args.x_expr);
-                y = eval(response.actions[0].args.y_expr);
-            }
-            else if (response.actions[0].args.x && response.actions[0].args.y) {
-                x = response.actions[0].args.x;
-                y = response.actions[0].args.y;
-            }
-            mission = new Mission("move", false, {x: x, y: y});
-        }
-        else if (response.actions.tool === "drop") {
-            const location = response.actions.args.location;
-            if (location.startsWith("leftmost")) mission = new Mission("drop", false, {x: 0});
-            else if (location.startsWith("rightmost")) mission = new Mission("drop", false, {x: this.bdi.belief.config.width - 1});
-            else if (location.startsWith("topmost")) mission = new Mission("drop", false, {y: 0});
-            else if (location.startsWith("bottommost")) mission = new Mission("drop", false , {y: this.bdi.belief.config.height - 1});
-        }
-        else throw new Error(`Unknown tool: ${response.actions.tool}`);
+        if(response.rewards <= 0) return;
+        
+        if (this.tools[response.action] === undefined) this.logger.error(`Unknown tool: ${response.action}`);
+        
+        const mission = this.tools[response.action](...response.input);
+        
+        if (mission === undefined) return
 
         this.bdi.belief.addMission(mission);
     }
 
-    async #solvePersistent(response) {
+    async #solvePersistent(message) {
     }
 
-    async #solveCoordination(response) {
+    async #solveCoordination(message) {
+    }
+
+    /**
+     * 
+     * @param {String} x 
+     * @param {String} y 
+     * @returns {Mission}
+     */
+    move(x, y){
+        x = eval(x);
+        y = eval(y);
+        
+        this.logger.debug(`Moving to (${x}, ${y})`);
+        return new Mission("move", false, {x: x, y: y});
+    }
+
+    /**
+     * 
+     * @param {String} direction 
+     * @returns {Mission}
+     */
+    moveMost(direction) {
+        if (direction.startsWith("left")) return new Mission("move", false, {x: 0});
+        else if (direction.startsWith("right")) return new Mission("move", false, {x: this.bdi.belief.config.width - 1});
+        else if (direction.startsWith("up")) return new Mission("move", false, {y: 0});
+        else if (direction.startsWith("down")) return new Mission("move", false, {y: this.bdi.belief.config.height - 1});
+        else this.logger.error(`Unknown direction: ${direction}`);
     }
 }
 

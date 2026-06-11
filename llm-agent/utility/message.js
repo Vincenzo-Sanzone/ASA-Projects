@@ -1,4 +1,4 @@
-import { Router, Cognitive, Mission } from "../llm/index.js";
+import { Router, Cognitive } from "../llm/index.js";
 import { Logger } from "../../utility/index.js";
 import { Caller } from "./caller.js";
 import { Strategy } from "./strategy.js";
@@ -30,10 +30,8 @@ class MessageHandler{
         console.log(`Router answered with type: ${type}`);
         // If the message is a tool mission, then we use the tool to handle it
         if (type === "TOOL_MISSION") {
-            const mission = new Mission(this.caller)
-            const response = await mission.route(messages)
-            const strategy = new Strategy(this.bdi)
-            strategy.solve(response)
+            const strategy = new Strategy(this.bdi, this.caller)
+            strategy.solve(messages)
         }
         // If the message is a cognitive mission, then we answer it
         else if (type === "COGNITIVE_MISSION") {
