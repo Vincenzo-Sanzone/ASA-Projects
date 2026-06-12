@@ -1,4 +1,4 @@
-import { MISSION_PARSER_PROMPT, LEVEL_1_PROMPT } from "../prompts/prompts.js";
+import { MISSION_PARSER_PROMPT, LEVEL_1_PROMPT, LEVEL_2_PROMPT, LEVEL_3_PROMPT } from "../prompts/prompts.js";
 import { Caller } from "../utility/index.js";
 import { Logger } from "../../utility/index.js";
 
@@ -29,6 +29,18 @@ class MissionParser {
 
     async solveLevelOne(message) {
         const messages = this.caller.createMessage(LEVEL_1_PROMPT, message)
+        const response = await this.caller.callJSONResponse(messages)
+        return response
+    }
+
+    async solveLevelTwo(message) {
+        const messages = this.caller.createMessage(LEVEL_2_PROMPT, message)
+        const response = await this.caller.callJSONResponse(messages)
+        return response
+    }
+
+    async solveLevelThree(message) {
+        const messages = this.caller.createMessage(LEVEL_3_PROMPT, message)
         const response = await this.caller.callJSONResponse(messages)
         return response
     }

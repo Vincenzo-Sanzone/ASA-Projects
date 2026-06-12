@@ -1,7 +1,7 @@
 import { Router, Cognitive } from "../llm/index.js";
 import { Logger } from "../../utility/index.js";
 import { Caller } from "./caller.js";
-import { Strategy } from "./strategy.js";
+import { Strategy } from "../logic/strategy.js";
 import { BDIAgent } from "../../bdi-agent/index.js";
 class MessageHandler{
 
