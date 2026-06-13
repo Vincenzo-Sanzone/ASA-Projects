@@ -78,12 +78,34 @@ class GameConfig {
 }
 
 class Mission {
-    constructor(type, persistent, args = {}) {
+    constructor(type, persistent, operation = "add", reward = 0, args = {}) {
         this.type = type;
         this.persistent = persistent
+        this.operation = operation
+        this.reward = reward
         this.args = args
-        this.reward = 0
     }
+
+    isNegative(){
+        return (this.operation === "add" && this.reward < 0) || (this.operation === "multiplier" && this.reward < 1);
+    }
+
+    getAsPositive() {
+        if (!this.isNegative()) return {operation: this.operation, reward: this.reward};
+
+        if (this.operation === "add") return {operation: this.operation, reward: Math.abs(this.reward)}
+        else return {operation: this.operation, reward: this.reward + 1}
+    }
+
+    static fromJSON(json) {
+    return new Mission(
+        json.type,
+        json.persistent,
+        json.operation,
+        json.reward,
+        json.args
+    );
+}
 }
 
 const TYPE_MISSION = Object.freeze({

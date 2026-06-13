@@ -2,7 +2,7 @@ import "dotenv/config";
 import { DjsConnect } from "@unitn-asa/deliveroo-js-sdk/client";
 import { Belief } from "./belief/belief.js";
 import { Desires } from "./desires/desires.js";
-import { decodeJWT, Movement, Coordinator } from "../utility/index.js";
+import { decodeJWT, Movement, Coordinator, Mission } from "../utility/index.js";
 import { IntentionsRevise } from "./intention/revise.js";
 import { Planner } from "./planner/planner.js";
 import { PickUpPlan, LookForParcelPlan, DeliverPlan, MissionPlan } from "./planner/index.js";
@@ -18,9 +18,9 @@ class BDIAgent {
     this.belief = new Belief(this.coordinator);
     this.desires = new Desires();
     this.planner = new Planner(this.socket);
-    // this.planner.registerPlan(PickUpPlan);
-    // this.planner.registerPlan(LookForParcelPlan);
-    // this.planner.registerPlan(DeliverPlan);
+    this.planner.registerPlan(PickUpPlan);
+    this.planner.registerPlan(LookForParcelPlan);
+    this.planner.registerPlan(DeliverPlan);
     this.planner.registerPlan(MissionPlan);
     this.intentions = new IntentionsRevise(this.belief, this.planner);
   }
@@ -61,7 +61,7 @@ class BDIAgent {
     const data = JSON.parse(msg);
 
     if (data.type === "mission") {
-      this.belief.addMission(data.mission);
+      this.belief.addMission(Mission.fromJSON(data.mission));
     }
     else if (data.type === "waitingNearTarget") {
       this.belief.isMyTeammateWaiting = true;

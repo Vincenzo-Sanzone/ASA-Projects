@@ -21,39 +21,35 @@ class LevelOneSolver {
         
         if (this.tools[response.action] === undefined) this.logger.error(`Unknown tool: ${response.action}`);
         
-        const mission = this.tools[response.action](...response.input);
+        const mission = this.tools[response.action](response);
         
         if (mission === undefined) return
-        mission.reward = response.rewards;
 
         this.bdi.belief.addMission(mission);
     }
 
     /**
      * 
-     * @param {String} x 
-     * @param {String} y 
      * @returns {Mission}
      */
-    #move(x, y){
-        x = eval(x);
-        y = eval(y);
+    #move(response) {
+        const x = eval(response.location[0]);
+        const y = eval(response.location[1]);
         
         this.logger.debug(`Moving to (${x}, ${y})`);
-        return new Mission(TYPE_MISSION.MOVE, false, {x: x, y: y});
+        return new Mission(TYPE_MISSION.MOVE, false, "add", response.reward, {x: x, y: y});
     }
 
     /**
      * 
-     * @param {String} direction 
      * @returns {Mission}
      */
-    #moveMost(direction) {
-        if (direction.startsWith("left")) return new Mission(TYPE_MISSION.DROP, false, {x: 0});
-        else if (direction.startsWith("right")) return new Mission(TYPE_MISSION.DROP, false, {x: this.bdi.belief.config.width - 1});
-        else if (direction.startsWith("up")) return new Mission(TYPE_MISSION.DROP, false, {y: 0});
-        else if (direction.startsWith("down")) return new Mission(TYPE_MISSION.DROP, false, {y: this.bdi.belief.config.height - 1});
-        else this.logger.error(`Unknown direction: ${direction}`);
+    #moveMost(response) {
+        if (response.location[0].startsWith("left")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {x: 0});
+        else if (response.location[0].startsWith("right")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {x: this.bdi.belief.config.width - 1});
+        else if (response.location[0].startsWith("up")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {y: 0});
+        else if (response.location[0].startsWith("down")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {y: this.bdi.belief.config.height - 1});
+        else this.logger.error(`Unknown direction: ${response.location[0]}`);
     }
 }
 

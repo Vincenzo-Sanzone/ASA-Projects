@@ -24,7 +24,7 @@ class DeliverPlan extends Plan {
 
     async execute() {
         // Calculate the nearest delivery point from my position
-        const { x, y } = Movement.nearestDeliveryPoint(this.intention.beliefs.config?.map, { x: this.intention.beliefs.me?.x, y: this.intention.beliefs.me?.y });
+        const { x, y } = Movement.nearestDeliveryPoint(this.intention.beliefs.config?.map, { x: this.intention.beliefs.me?.x, y: this.intention.beliefs.me?.y }, this.intention.beliefs.enemies, this.intention.beliefs.getDeliveryLocationMissions());
         this.logger.debug(`Delivering at (${x}, ${y})`);
         // Step 1: Move to the delivery point
         await this.goTo.execute(x, y);

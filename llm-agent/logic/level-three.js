@@ -32,13 +32,11 @@ class LevelThreeSolver {
 
         if (response.action === TYPE_MISSION.MOVE_NEAR) {
             for (const m of mission) {
-                m.reward = response.reward;
                 this.bdi.coordinator.sendMission(m);
                 this.bdi.belief.addMission(m);
             }
         }
         else {
-            mission.reward = response.reward;
             this.bdi.coordinator.sendMission(mission);
             this.bdi.belief.addMission(mission);
         }
@@ -49,20 +47,20 @@ class LevelThreeSolver {
         
         const missions = [];
         for (let i = 0; i < response.location.length; i += 2) {
-            missions.push(new Mission(TYPE_MISSION.MOVE_NEAR, false, { x: eval(response.location[i]), y: eval(response.location[i + 1]), distance: eval(response.distance) }));
+            missions.push(new Mission(TYPE_MISSION.MOVE_NEAR, false, "add", response.reward, { x: eval(response.location[i]), y: eval(response.location[i + 1]), distance: eval(response.distance) }));
         }
         return missions;
     }
 
     #crossAgentDelivery(response) {
-        if (response.reward === undefined) return undefined;
-        if (response.reward <= 0) return undefined;
+        if (response.reward === undefined && response.multiplier === undefined) return undefined;
+        if (response.reward <= 0 || response.multiplier < 1) return undefined;
         
         return new Mission(TYPE_MISSION.CROSS_AGENT, true);
     }
 
     #redGreenLight(response) {
-        if (response.location === undefined || response.reward === undefined) return undefined;
+        if (response.location === undefined || (response.reward === undefined)) return undefined;
         if (response.reward <= 0) return undefined;
 
         let xOdd = null;
@@ -75,7 +73,7 @@ class LevelThreeSolver {
             if (response.location[i+1] === "column") yOdd = isOdd;
         }
         
-        return new Mission(TYPE_MISSION.RED_GREEN_LIGHT, false, { xOdd: xOdd, yOdd: yOdd });
+        return new Mission(TYPE_MISSION.RED_GREEN_LIGHT, false, "add", response.reward, { xOdd: xOdd, yOdd: yOdd });
     }
 }
 

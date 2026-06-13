@@ -16,7 +16,7 @@ class Desires {
         // Generate desires based on the current belief. This can involve creating a list of desires that the agent wants to achieve based on the information it has about itself, other agents, parcels, and the game configuration.
         this.desires = []; // Clear previous desires    
 
-        if(belief.waiting) {return}
+        if (belief.waiting) { return }
 
         this.logger.debug(`I know that there are ${belief.parcels.length} parcels`);
         for (const parcel of belief.parcels) {
@@ -56,7 +56,7 @@ class Desires {
      */
     calculateMissionPriority(mission, belief) {
         if (mission.type === TYPE_MISSION.DROP && belief.parcels.filter(p => p.carriedBy === belief.me.id).length === 0) return 0;
-        
+
         return mission.reward * 100;
     }
 
@@ -79,15 +79,13 @@ class Desires {
 
         let priority = 1 + parcel.reward - (distance / 5);
         const carriedParcels = belief.parcels.filter(p => p.carriedBy === belief.me.id);
-    
-        // Pick the mission with best multiplier
-        const bestMission = belief.getDeliveryStackMissions().sort((a, b) => b.args.multiplier - a.args.multiplier)[0];
 
-        const isGoodMultiplier = bestMission && bestMission.args.multiplier > 1;
-        if (isGoodMultiplier && bestMission.args.size < carriedParcels.length) priority *= bestMission.args.multiplier;
-        else if (bestMission && !isGoodMultiplier && bestMission.args.size === carriedParcels.length) priority *= 1 + bestMission.args.multiplier;
-        if (isGoodMultiplier && bestMission.args.size === carriedParcels.length) return 0;
-        else if ((bestMission === null || isGoodMultiplier) && distance == 0) return 1000;
+        // Pick the mission with best multiplier
+        const bestMission = belief.getDeliveryStackMissions().sort((a, b) => b.reward - a.reward)[0];
+        if (bestMission && !bestMission.isNegative() && bestMission.args.size < carriedParcels.length) priority = this.#applyRewardModifiers(priority, bestMission);
+        else if (bestMission && bestMission.isNegative() && bestMission.args.size === carriedParcels.length) priority = this.#applyRewardModifiers(priority, bestMission);
+        if (bestMission && !bestMission.isNegative() && bestMission.args.size === carriedParcels.length) return 0;
+        else if ((bestMission === undefined || !bestMission.isNegative()) && distance == 0) return 1000;
 
         return priority;
     }
@@ -100,22 +98,18 @@ class Desires {
      */
     calculateDeliveryPriority(parcels, belief) {
         const canICarryMore = belief.config.capacity - parcels.length;
-        
+
         let summedReward = 0;
         const scoreMissions = belief.getDeliveryScoreOverrideMissions();
         for (const parcel of parcels) {
             for (const mission of scoreMissions) {
                 switch (mission.args.operator) {
                     case '<': {
-                        if (mission.args.score < parcel.reward) summedReward += (parcel.reward * mission.args.multiplier);
+                        if (mission.args.score < parcel.reward) summedReward += this.#applyRewardModifiers(parcel.reward, mission);
                         break;
                     }
                     case '>': {
-                        if (mission.args.score > parcel.reward) summedReward += (parcel.reward * mission.args.multiplier);
-                        break;
-                    }
-                    case '==': {
-                        if (mission.args.score === parcel.reward) summedReward += (parcel.reward * mission.args.multiplier);
+                        if (mission.args.score > parcel.reward) summedReward += this.#applyRewardModifiers(parcel.reward, mission);
                         break;
                     }
                 }
@@ -124,16 +118,16 @@ class Desires {
         }
 
         if (canICarryMore === 0) return summedReward;
-        const nearestDeliveryPoint = Movement.nearestDeliveryPoint(belief.config?.map, belief.me); 
+        const nearestDeliveryPoint = Movement.nearestDeliveryPoint(belief.config?.map, belief.me);
         if (belief.missions.length === 0 && nearestDeliveryPoint.distance === 0) return 100;
-        
+
         const minimumReward = belief.config?.average - belief.config?.variance;
         const minimumGoodRewardPickup = Math.floor(minimumReward * 0.5);
 
         let priority = summedReward;
         // Pick the mission with best multiplier
-        const bestMission = belief.getDeliveryStackMissions().sort((a, b) => b.args.multiplier - a.args.multiplier)[0];
-        if (bestMission && bestMission.args.size === parcels.length) priority *= bestMission.args.multiplier;
+        const bestMission = belief.getDeliveryStackMissions().sort((a, b) => b.reward - a.reward)[0];
+        if (bestMission && bestMission.args.size === parcels.length) priority = this.#applyRewardModifiers(priority, bestMission);
         return priority - (canICarryMore * minimumGoodRewardPickup);
     }
 
@@ -154,23 +148,37 @@ class Desires {
         let priority = 1;
         const carriedParcels = belief.parcels.filter(p => p.carriedBy === belief.me.id);
         // Pick the mission with best multiplier
-        const bestMission = belief.getDeliveryStackMissions().sort((a, b) => b.args.multiplier - a.args.multiplier)[0];
-        if (bestMission && bestMission.args.size < carriedParcels.length) priority *= bestMission.args.multiplier;
-        else if (bestMission && bestMission.args.size === carriedParcels.length && bestMission.args.multiplier < 1) priority *= 1 + bestMission.args.multiplier;
+        const bestMission = belief.getDeliveryStackMissions().sort((a, b) => b.reward - a.reward)[0];
+        if (bestMission && bestMission.args.size < carriedParcels.length) priority = this.#applyRewardModifiers(priority, bestMission);
+        else if (bestMission && bestMission.args.size === carriedParcels.length && bestMission.isNegative()) priority = this.#applyRewardModifiers(priority, bestMission);
+        
 
         return priority + minimumGoodRewardPickup;
     }
 
-    // ─── Helper condivisi ────────────────────────────────────────────────
 
     /**
-     * Stima il reward di un pacco dopo `steps` passi, considerando il decay.
-     * Ogni passo impiega `clockMs` ms; il reward cala di 1 ogni `decayTimeMs`.
+     * 
+     * @param {number} baseReward 
+     * @param {Mission} mission 
+     * @returns 
      */
-    estimateRewardAfterSteps(reward, steps, clockMs, decayTimeMs) {
-        if (decayTimeMs === Infinity || decayTimeMs === 0) return reward;
-        const elapsed = steps * clockMs * 2;
-        return Math.max(0, reward - elapsed / decayTimeMs);
+    #applyRewardModifiers(baseReward, mission) {
+        let reward = baseReward;
+
+        const {operation: type, reward: value} = mission.getAsPositive();
+
+        switch (type) {
+            case "multiply":
+                reward *= value;
+                break;
+
+            case "add":
+                reward += value;
+                break;
+        }
+        
+        return reward;
     }
 
 }

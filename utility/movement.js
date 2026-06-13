@@ -248,24 +248,58 @@ class Movement {
      * Gets the coordinates of the nearest delivery point to the given coordinates.
      * @param {GameMap} map - The game map containing the layout of tiles, walls, and directional arrows.
      * @param {{x: number, y: number}} start - The coordinates of the agent.
+     * @param {Array} enemies - An array of objects representing the coordinates of the enemies.
+     * @param {Array} missionDelivery - An array of objects representing the coordinates of the mission delivery points.
      * @returns {{x: number, y: number, distance: number}} The coordinates of the nearest delivery point and its distance.
      */
-    static nearestDeliveryPoint(map, start) {
+    static nearestDeliveryPoint(map, start, enemies = [], missionDelivery = []) {
+
         const deliveryPoints = this.getDeliveryPoints(map);
-        if (deliveryPoints.length === 0) {
+
+        if (deliveryPoints.length === 0 && missionDelivery.length === 0) {
             return { distance: Infinity, x: null, y: null };
         }
 
-        return deliveryPoints.reduce((nearest, point) => {
-            const distance = this.getDistance(map, start, point);
-            if (distance === NaN || distance === Infinity) {
-                return { distance: Infinity, x: null, y: null };
+        // Create a set of negative missions
+        const forbidden = new Set(
+            missionDelivery.filter(m => m.isNegative()).map(m => `${m.args.x},${m.args.y}`)
+        );
+
+        if (forbidden.size > 0) {
+            console.log("[DEBUG] Forbidden missions:", forbidden);
+        }
+
+        // Avoid negative missions
+        const isForbidden = (x, y) => forbidden.has(`${x},${y}`);
+
+        const positive = missionDelivery.filter(m => !m.isNegative());
+
+        if (positive.length > 0) {
+            const best = positive.reduce((nearest, mission) => {
+                const { x, y } = mission.args;
+                if (isForbidden(x, y)) return nearest;
+                const distance = this.getDistance(map, start, mission.args, enemies);
+                if (!Number.isFinite(distance)) return nearest;
+                if (!nearest || distance < nearest.distance) {
+                    return { distance, x, y, mission };
+                }
+                return nearest;
+            }, null);
+            if (best) {
+                console.log("[DEBUG] Nearest positive mission:", best.mission);
+                return best;
             }
+        }
+
+        return deliveryPoints.reduce((nearest, point) => {
+            if (isForbidden(point.x, point.y)) return nearest;
+            const distance = this.getDistance(map, start, point, enemies);
+            if (!Number.isFinite(distance)) return nearest;
             if (!nearest || distance < nearest.distance) {
                 return { distance, x: point.x, y: point.y };
             }
             return nearest;
-        }, undefined);
+        }, null);
     }
 
     /**

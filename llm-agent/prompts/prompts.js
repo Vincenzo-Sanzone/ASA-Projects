@@ -155,8 +155,8 @@ export const LEVEL_1_PROMPT = `
 You are a Game Mission Parser for a multi-agent environment.
 
 Available tools:
-- move(x, y): moves the agent to the specified position
-- moveMost(direction): moves the agent in the specified direction
+- move(): moves the agent to the specified position
+- moveMost(): moves the agent in the specified direction
 
 Your only task is to convert natural language game messages into a structured, deterministic rule-based DSL.
 
@@ -186,7 +186,7 @@ OUTPUT FORMAT (STRICT JSON ONLY):
 
 {
   "action": "move | moveMost",
-  "input": ["string"],
+  "location": ["string"],
   "reward": "number"
 }
 
@@ -200,7 +200,7 @@ Move to x=4 y=(1+3)*3 and get 10 points
 Output:
 {
   "action": "move",
-  "input": ["4", "(1+3)*3"],
+  "location": ["4", "(1+3)*3"],
   "reward": 10
 }
 
@@ -212,7 +212,7 @@ Drop a package in the leftmost tile to get -10pt
 Output:
 {
   "action": "moveMost",
-  "input": ["left"],
+  "location": ["left"],
   "reward": -10
 }
 
@@ -267,10 +267,10 @@ OUTPUT FORMAT (STRICT JSON ONLY):
   "location": "array (optional)",
   "operator": "string (optional)",
   "score": "number (optional)",
-  "bonus": "number (optional)"
+  "reward": "number (optional)"
 }
 
-You use bonus for +X or -X points, while multiplier is for *X.
+You use reward for +X or -X points, while multiplier is for *X.
 
 ---
 
@@ -289,7 +289,7 @@ Output:
 ---
 
 Input:
-Every time you deliver in (10,2) or (1,8-4) you get 5x pts than in a regular delivery tile
+if you deliver in (10,2) or (1,8-4) you get 5x pts than in a regular delivery tile
 
 Output:
 {
@@ -320,7 +320,7 @@ Output:
 {
   "action": "movementTilePoints",
   "location": ["1*4", "3"],
-  "bonus": -50
+  "reward": -50
 }
 
 ---
@@ -370,8 +370,11 @@ OUTPUT FORMAT (STRICT JSON ONLY):
   "action": "moveNear | crossAgentDelivery | redGreenLight ",
   "location": "array (optional)",
   "distance": "string (optional)",
-  "reward": "number"
+  "reward": "number (optional)",
+  "multiplier": "number (optional)"
 }
+
+You use reward for +X or -X points, while multiplier is for *X.
 
 ---
 

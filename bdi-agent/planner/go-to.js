@@ -46,6 +46,9 @@ class GoToPlan extends Plan {
     async #moveWithAStar(beliefs, startX, startY, finalX, finalY) {
         let path = Movement.aStar(beliefs.config?.map, { x: startX, y: startY }, { x: finalX, y: finalY }, beliefs.enemies)?.slice(1);
         
+        // TODO che si fa??
+        if (!path) return false;
+
         // Get start x and y as string
         let startXAsString = 'x' + startX.toString();
         let startYAsString = 'y' + startY.toString();
@@ -58,6 +61,8 @@ class GoToPlan extends Plan {
             if (this.stopped) return false;
             if (replan){ 
                 path = Movement.aStar(beliefs.config?.map, { x: eval(startXAsString.slice(1)), y: eval(startYAsString.slice(1)) }, { x: finalX, y: finalY }, beliefs.enemies)?.slice(1);
+                // TODO CHE si fa??
+                if (!path) return false;
             }
             startXAsString = x;
             startYAsString = y;
