@@ -18,7 +18,7 @@ console.log = (...args) => {
   ) {originalConsoleLog(...args);}
 };
 
-// const bdi = new BDIAgent(process.env.BDI_TOKEN);
-// bdi.startAgent();
-const llm = new LLMAgent(process.env.LLM_TOKEN);
+const bdi = new BDIAgent(process.env.BDI_TOKEN, process.env.LLM_TOKEN);
+bdi.startAgent();
+const llm = new LLMAgent(process.env.LLM_TOKEN, process.env.BDI_TOKEN);
 llm.startAgent();

@@ -128,11 +128,11 @@ class Desires {
         const minimumReward = belief.config?.average - belief.config?.variance;
         const minimumGoodRewardPickup = Math.floor(minimumReward * 0.5);
 
-        let priority = summedReward - (canICarryMore * minimumGoodRewardPickup);
+        let priority = summedReward;
         // Pick the mission with best multiplier
         const bestMission = belief.getDeliveryStackMissions().sort((a, b) => b.args.multiplier - a.args.multiplier)[0];
         if (bestMission && bestMission.args.size === parcels.length) priority *= bestMission.args.multiplier;
-        return priority;
+        return priority - (canICarryMore * minimumGoodRewardPickup);
     }
 
     /**

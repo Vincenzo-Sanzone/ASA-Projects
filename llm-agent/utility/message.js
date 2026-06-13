@@ -20,10 +20,14 @@ class MessageHandler{
     /**
      * 
      * @param {String} id - id of the user who sent the message
+     * @param {String} name - the name of the user
      * @param {String} messages - the message 
      */
-    async handleMessage(id, messages) {
+    async handleMessage(id, name, messages) {
         this.logger.info("Handling message...", messages);
+        // The BDI sent this message, so handle it in the traditional way
+        if (name === process.env.BDI_NAME) this.bdi.handleMessage(id, name, messages);
+
         const router = new Router(this.caller)
         // Determine the type of the message
         const type = await router.route(messages);

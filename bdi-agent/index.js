@@ -2,7 +2,7 @@ import "dotenv/config";
 import { DjsConnect } from "@unitn-asa/deliveroo-js-sdk/client";
 import { Belief } from "./belief/belief.js";
 import { Desires } from "./desires/desires.js";
-import { Movement } from "../utility/index.js";
+import { decodeJWT, Movement, Coordinator } from "../utility/index.js";
 import { IntentionsRevise } from "./intention/revise.js";
 import { Planner } from "./planner/planner.js";
 import { PickUpPlan, LookForParcelPlan, DeliverPlan, MissionPlan } from "./planner/index.js";
@@ -11,9 +11,11 @@ import { Pddl } from "../pddl/index.js";
 
 class BDIAgent {
 
-  constructor(token) {
+  constructor(token, teammateToken) {
     this.socket = DjsConnect(process.env.HOST, token);
-    this.belief = new Belief();
+    this.teammateId = decodeJWT(teammateToken).id
+    this.coordinator = new Coordinator(this.socket, this.teammateId);
+    this.belief = new Belief(this.coordinator);
     this.desires = new Desires();
     this.planner = new Planner(this.socket);
     this.planner.registerPlan(PickUpPlan);
@@ -45,10 +47,36 @@ class BDIAgent {
       Pddl.clearCache();
     });
 
-    this.socket.onDisconnect((reason) => {
-      console.log("[DEBUG] Disconnected from Deliveroo, shutting down...", reason);
+    this.socket.onMsg((id, name, msg) => { this.handleMessage(id, name, msg); });
+
+    this.socket.onDisconnect((reason, other) => {
+      console.log("[DEBUG] Disconnected from Deliveroo, shutting down...", reason, other);
       process.exit(0);
     });
+  }
+
+  handleMessage(id, name, msg) {
+    // If the message is not from my teammate, ignore it
+    if (id !== this.teammateId) return
+    const data = JSON.parse(msg);
+
+    if (data.type === "mission") {
+      this.belief.addMission(data.mission);
+    }
+    else if (data.type === "waitingNearTarget") {
+      this.belief.isMyTeammateWaiting = true;
+    }
+    else if (data.type === "done") {
+      if (!this.belief.isMyTeammateWaiting) {
+        this.coordinator.sendDone();
+      }
+      this.belief.isMyTeammateWaiting = false;
+      this.belief.waiting = false;
+    }
+    else if (data.type === "resume") {
+      this.belief.waiting = false;
+    }
+
   }
 
   startAgent() {

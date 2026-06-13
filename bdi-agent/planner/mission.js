@@ -35,15 +35,10 @@ class MissionPlan extends Plan {
         this.logger.debug(`Solving mission ${mission.type}`);
 
         if (mission.type === TYPE_MISSION.MOVE) await this.goTo.execute(mission.args.x, mission.args.y);
-        else if (mission.type === TYPE_MISSION.DROP) {
-            await this.#drop(mission.args);
-        }
-        else if (mission.type === TYPE_MISSION.MOVE_NEAR) {
-            await this.#moveNear(mission.args);
-        }
-        else if (mission.type === TYPE_MISSION.RED_GREEN_LIGHT) {
-            await this.#playRedGreenLight(mission.args);
-        }
+        else if (mission.type === TYPE_MISSION.DROP) await this.#drop(mission.args);
+        else if (mission.type === TYPE_MISSION.MOVE_NEAR) await this.#moveNear(mission.args);
+        else if (mission.type === TYPE_MISSION.RED_GREEN_LIGHT) await this.#playRedGreenLight(mission.args);
+        
         if (this.stopped) return false;
 
         this.intention.beliefs.removeMission(mission);
@@ -67,8 +62,8 @@ class MissionPlan extends Plan {
         const closestTile = allPossibleTiles.reduce((best, tile) => {
             if (!best) return tile;
 
-            const d1 = Movement.getDistance(this.intention.beliefs.config?.map, this.intention.beliefs.me, tile);
-            const d2 = Movement.getDistance(this.intention.beliefs.config?.map, this.intention.beliefs.me, best);
+            const d1 = Movement.getDistance(this.intention.beliefs.config?.map, this.intention.beliefs.me, tile, this.intention.beliefs.enemies);
+            const d2 = Movement.getDistance(this.intention.beliefs.config?.map, this.intention.beliefs.me, best, this.intention.beliefs.enemies);
 
             return d1 < d2 ? tile : best;
         }, null);
@@ -78,6 +73,7 @@ class MissionPlan extends Plan {
 
         if (this.stopped) return false;
         this.intention.beliefs.waiting = true;
+        if (this.intention.beliefs.isMyTeammateWaiting) this.intention.beliefs.coordinator.sendDone();
     }
 
     async #playRedGreenLight(args) {
@@ -100,7 +96,7 @@ class MissionPlan extends Plan {
             this.intention.beliefs.waiting = true;
             return true;
         }
-        const tile = Strategy.findTileWith(this.intention.beliefs.config.map, this.intention.beliefs.me, isXOdd, isYOdd);
+        const tile = Strategy.findTileWith(this.intention.beliefs.config.map, this.intention.beliefs.me, isXOdd, isYOdd, this.intention.beliefs.enemies);
         await this.goTo.execute(tile.x, tile.y);
         if (this.stopped) return false;
         this.intention.beliefs.waiting = true;

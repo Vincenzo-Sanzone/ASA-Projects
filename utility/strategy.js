@@ -152,8 +152,9 @@ class Strategy {
      * @param {{x: number, y: number}} me 
      * @param {boolean} isXOdd 
      * @param {boolean} isYOdd 
+     * @param {Array} enemies
      */
-    static findTileWith(map, me, isXOdd, isYOdd) {
+    static findTileWith(map, me, isXOdd, isYOdd, enemies) {
         let bestTile = null;
         let bestDistance = Infinity;
 
@@ -177,7 +178,7 @@ class Strategy {
                     if (isOdd !== isYOdd) continue;
                 }
 
-                const dist = Movement.getDistance(map, me, tile);
+                const dist = Movement.getDistance(map, me, tile, enemies);
 
                 if (dist < bestDistance) {
                     bestDistance = dist;

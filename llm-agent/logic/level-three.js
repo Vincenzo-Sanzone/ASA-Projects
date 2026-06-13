@@ -1,6 +1,14 @@
-import { Logger, Mission, TYPE_MISSION } from "../../utility/index.js";
+import { Logger, Mission, TYPE_MISSION, Coordinator } from "../../utility/index.js";
+import { BDIAgent } from "../../bdi-agent/index.js";
+import { MissionParser } from "../llm/mission.js";
 
 class LevelThreeSolver {
+
+    /**
+     * 
+     * @param {MissionParser} parser 
+     * @param {BDIAgent} bdi 
+     */
     constructor(parser, bdi) {
         this.parser = parser;
         this.tools = {
@@ -26,11 +34,13 @@ class LevelThreeSolver {
         if (response.action === TYPE_MISSION.MOVE_NEAR) {
             for (const m of mission) {
                 m.reward = response.rewards;
+                this.bdi.coordinator.sendMission(m);
                 this.bdi.belief.addMission(m);
             }
         }
         else {
             mission.reward = response.rewards;
+            this.bdi.coordinator.sendMission(mission);
             this.bdi.belief.addMission(mission);
         }
     }
