@@ -1,4 +1,4 @@
-import { Logger, Mission } from "../../utility/index.js";
+import { Logger, Mission, TYPE_MISSION } from "../../utility/index.js";
 
 class LevelThreeSolver {
     constructor(parser, bdi) {
@@ -23,36 +23,41 @@ class LevelThreeSolver {
 
         if (mission === undefined) this.logger.error(`Didn't get a mission from the tool: ${response.action}`);
 
-        if (response.action === "moveNear") {
+        if (response.action === TYPE_MISSION.MOVE_NEAR) {
             for (const m of mission) {
+                m.reward = response.rewards;
                 this.bdi.belief.addMission(m);
             }
         }
-        else this.bdi.belief.addMission(mission);
+        else {
+            mission.reward = response.rewards;
+            this.bdi.belief.addMission(mission);
+        }
     }
 
     #moveNear(response) {
-        if (response.location === undefined || response.distance === undefined || response.bonus === undefined) return undefined;
+        if (response.location === undefined || response.distance === undefined || response.bonus === undefined || response.bonus < 1) return undefined;
         
         const missions = [];
         for (let i = 0; i < response.location.length; i += 2) {
-            missions.push(new Mission("moveNear", false, { x: eval(response.location[i]), y: eval(response.location[i + 1]), distance: response.distance, bonus: response.bonus }));
+            missions.push(new Mission(TYPE_MISSION.MOVE_NEAR, false, { x: eval(response.location[i]), y: eval(response.location[i + 1]), distance: response.distance, bonus: response.bonus }));
         }
         return missions;
     }
 
     #crossAgentDelivery(response) {
         if (response.bonus === undefined) return undefined;
-
-        return new Mission("crossAgentDelivery", true, { bonus: response.bonus });
+        if (response.bonus <= 0) return undefined;
+        
+        return new Mission(TYPE_MISSION.CROSS_AGENT, true, { bonus: response.bonus });
     }
 
     #redGreenLight(response) {
         if (response.location === undefined || response.bonus === undefined) return undefined;
         if (response.bonus <= 0) return undefined;
 
-        let xOdd = undefined;
-        let yOdd = undefined;
+        let xOdd = null;
+        let yOdd = null;
 
         for (let i=0; i < response.location.length; i++) {
             let isOdd = true;
@@ -61,7 +66,7 @@ class LevelThreeSolver {
             if (response.location[i+1] === "column") yOdd = isOdd;
         }
         
-        return new Mission("redGreenLight", false, { xOdd: xOdd, yOdd: yOdd });
+        return new Mission(TYPE_MISSION.RED_GREEN_LIGHT, false, { xOdd: xOdd, yOdd: yOdd });
     }
 }
 

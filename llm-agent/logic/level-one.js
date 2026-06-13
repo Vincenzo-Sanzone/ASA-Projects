@@ -1,4 +1,4 @@
-import { Logger, Mission } from "../../utility/index.js";
+import { Logger, Mission, TYPE_MISSION } from "../../utility/index.js";
 
 class LevelOneSolver {
     constructor(parser, bdi) {
@@ -23,6 +23,7 @@ class LevelOneSolver {
         const mission = this.tools[response.action](...response.input);
         
         if (mission === undefined) return
+        mission.reward = response.rewards;
 
         this.bdi.belief.addMission(mission);
     }
@@ -38,7 +39,7 @@ class LevelOneSolver {
         y = eval(y);
         
         this.logger.debug(`Moving to (${x}, ${y})`);
-        return new Mission("move", false, {x: x, y: y});
+        return new Mission(TYPE_MISSION.MOVE, false, {x: x, y: y});
     }
 
     /**
@@ -47,10 +48,10 @@ class LevelOneSolver {
      * @returns {Mission}
      */
     #moveMost(direction) {
-        if (direction.startsWith("left")) return new Mission("move", false, {x: 0});
-        else if (direction.startsWith("right")) return new Mission("move", false, {x: this.bdi.belief.config.width - 1});
-        else if (direction.startsWith("up")) return new Mission("move", false, {y: 0});
-        else if (direction.startsWith("down")) return new Mission("move", false, {y: this.bdi.belief.config.height - 1});
+        if (direction.startsWith("left")) return new Mission(TYPE_MISSION.DROP, false, {x: 0});
+        else if (direction.startsWith("right")) return new Mission(TYPE_MISSION.DROP, false, {x: this.bdi.belief.config.width - 1});
+        else if (direction.startsWith("up")) return new Mission(TYPE_MISSION.DROP, false, {y: 0});
+        else if (direction.startsWith("down")) return new Mission(TYPE_MISSION.DROP, false, {y: this.bdi.belief.config.height - 1});
         else this.logger.error(`Unknown direction: ${direction}`);
     }
 }

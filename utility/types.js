@@ -82,7 +82,21 @@ class Mission {
         this.type = type;
         this.persistent = persistent
         this.args = args
+        this.reward = 0
     }
 }
 
-export { Agent, Parcel, Crates, GameMap, GameConfig, Mission };
+const TYPE_MISSION = Object.freeze({
+    MOVE: "move",
+    DROP: "drop",
+    DELIVERY_STACK: "deliveryStackMultiplier",
+    DELIVERY_LOCATION: "deliveryLocationMultiplier",
+    DELIVERY_SCORE: "deliveryScoreOverride",
+    MOVEMENT_TILE: "movementTilePoints",
+    MOVE_NEAR: "moveNear",
+    CROSS_AGENT: "crossAgent",
+    RED_GREEN_LIGHT: "redGreenLight"
+
+});
+
+export { Agent, Parcel, Crates, GameMap, GameConfig, Mission, TYPE_MISSION };

@@ -44,7 +44,7 @@ class GoToPlan extends Plan {
     }
 
     async #moveWithAStar(beliefs, startX, startY, x, y) {
-        const path = Movement.aStar(beliefs.config?.map, { x: startX, y: startY }, { x, y }, beliefs.enemies);
+        const path = Movement.aStar(beliefs.config?.map, { x: startX, y: startY }, { x, y }, beliefs.enemies)?.slice(1);
 
         // Get start x and y as string
         let startXAsString = 'x' + startX.toString();

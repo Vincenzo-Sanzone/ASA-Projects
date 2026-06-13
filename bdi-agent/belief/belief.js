@@ -1,4 +1,4 @@
-import { Logger, Agent, Parcel, GameConfig, Movement, Strategy, Crates, Mission } from "../../utility/index.js";
+import { Logger, Agent, Parcel, GameConfig, Movement, Strategy, Crates, Mission, TYPE_MISSION } from "../../utility/index.js";
 
 class Belief {
     constructor() {
@@ -10,6 +10,7 @@ class Belief {
         this.missions = []; // List of missions 
         this.thereIsAtomicMission = false;
         this.isNeededReconsidering = false; // Flag to indicate if the belief needs to be reconsidered due to changes in the environment or new information received.
+        this.waiting = false; //Flag to indicate if we are waiting for a mission to complete
 
         this.logger = new Logger("Belief:");
     }
@@ -186,6 +187,26 @@ class Belief {
         this.missions = this.missions.filter(m => m !== mission);
 
         this.thereIsAtomicMission = this.missions.some(m => !m.persistent);
+    }
+
+    #getMissions(type) {
+        return this.missions.filter(m => m.type === type);    
+    }
+
+    getDeliveryStackMissions() {
+        return this.#getMissions(TYPE_MISSION.DELIVERY_STACK);
+    }
+
+    getDeliveryLocationMissions() {
+        return this.#getMissions(TYPE_MISSION.DELIVERY_LOCATION);
+    }
+
+    getDeliveryScoreOverrideMissions() {
+        return this.#getMissions(TYPE_MISSION.DELIVERY_SCORE);
+    }
+
+    getMovementTilePointsMissions() {
+        return this.#getMissions(TYPE_MISSION.MOVEMENT_TILE);
     }
 }
 

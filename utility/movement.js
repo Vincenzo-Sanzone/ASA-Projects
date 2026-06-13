@@ -2,7 +2,6 @@ import { DjsClientSocket } from "@unitn-asa/deliveroo-js-sdk";
 import { GameMap, Logger, executeUntilDone, Strategy } from "./index.js";
 import { Belief } from "../bdi-agent/belief/belief.js";
 class Movement {
-    static #distanceCache = new Map();
     static #spawnClusterCache = null;
     /**
      * 
@@ -73,7 +72,10 @@ class Movement {
             if (Strategy.isValidMove(belief.config?.map, { x: xStart, y: yStart }, { x: xTarget, y: yTarget }, belief)) {
                 await this.#doMove(move, { x: xTarget, y: yTarget });
             }
-            else this.stop();
+            else {
+                // TODO ask the planner to replan
+                this.stop();
+            }
         }
     }
 
@@ -203,7 +205,7 @@ class Movement {
             path.push(current);
         }
 
-        path.reverse().slice(1);
+        path.reverse()
         for (let i = 0; i < path.length; i++) {
             const [x, y] = path[i].split(',').map(Number);
             path[i] = `x${x} y${y}`;
@@ -213,7 +215,7 @@ class Movement {
 
     static getDistance(map, start, target, enemies) {
         const path = this.aStar(map, start, target, enemies);
-        return path ? path.length : Infinity;
+        return path ? path.length - 1 : Infinity;
     }
 
     /**
@@ -336,7 +338,6 @@ class Movement {
 
 
     static invalidateCache() {
-        this.#distanceCache.clear();
         this.#spawnClusterCache = null;
     }
 }

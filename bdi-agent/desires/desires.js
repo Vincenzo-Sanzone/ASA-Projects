@@ -1,5 +1,5 @@
 import { Belief } from "../belief/belief.js";
-import { Movement, Parcel, Logger, Strategy, Mission } from "../../utility/index.js";
+import { Movement, Parcel, Logger, Strategy, Mission, TYPE_MISSION } from "../../utility/index.js";
 
 //TODO fix the priority so it becames more balanced
 class Desires {
@@ -44,6 +44,7 @@ class Desires {
         // Sort desires by priority in descending order, so that the most important desires are pursued first.
         this.desires.sort((a, b) => b.priority - a.priority);
         this.desires.forEach(desire => this.logger.debug(`Desire: ${desire.type}, Priority: ${desire.priority}`));
+        //console.log("[DEBUG] Desires:", JSON.stringify(this.desires, null, 2));
     }
 
     /**
@@ -52,8 +53,9 @@ class Desires {
      * @param {Belief} belief 
      */
     calculateMissionPriority(mission, belief) {
-        // TODO fix priority, for the moment we want to test mission.
-        return 100000;
+        if (mission.type === TYPE_MISSION.DROP && belief.parcels.filter(p => p.carriedBy === belief.me.id).length === 0) return 0;
+        
+        mission.reward * 100;
     }
 
     /**
@@ -64,19 +66,26 @@ class Desires {
      * @returns {number} Priority score (higher = better, no cap).
      */
     calculatePickUpPriority(parcel, belief) {
-        const me = { x: belief.me.x, y: belief.me.y };
-        const distToParcel = Movement.getDistance(belief.config.map, me, { x: parcel.x, y: parcel.y }, belief.enemies);
-        if (distToParcel === Infinity) return -1;
-        if (distToParcel === 0) return 900 + parcel.reward;
+        const minimumReward = belief.config?.average - belief.config?.variance;
+        const minimumGoodRewardPickup = Math.floor(minimumReward * 0.3);
 
-        const estimatedReward = this.estimateRewardAfterSteps(parcel.reward, distToParcel, 50, Strategy.clockEventToMs(belief.config.decayEvent));
-        if (estimatedReward <= 10) return -1;
-        if (distToParcel <= belief.config?.observationDistance) {
-            this.logger.debug(`Parcel ${parcel.id} distance to me: ${distToParcel}, is within observation distance (${belief.config?.observationDistance})`);
-            return 900 + parcel.reward - distToParcel;
-        }
+        const canICarryMore = belief.config.capacity - belief.parcels.filter(p => p.carriedBy === belief.me.id).length;
+        if (canICarryMore === 0) return 0;
+        const distance = Movement.getDistance(belief.config?.map, belief.me, { x: parcel.x, y: parcel.y }, belief.enemies);
 
-        const priority = parcel.reward - distToParcel;
+        if (parcel.reward < minimumGoodRewardPickup) return 0;
+
+        let priority = 1 + parcel.reward - (distance / 5);
+        const carriedParcels = belief.parcels.filter(p => p.carriedBy === belief.me.id);
+    
+        // Pick the mission with best multiplier
+        const bestMission = belief.getDeliveryStackMissions().sort((a, b) => b.args.multiplier - a.args.multiplier)[0];
+
+        const isGoodMultiplier = bestMission && bestMission.args.multiplier > 1;
+        if (isGoodMultiplier && bestMission.args.size < carriedParcels.length) priority *= bestMission.args.multiplier;
+        else if (bestMission && !isGoodMultiplier && bestMission.args.size === carriedParcels.length) priority *= 1 + bestMission.args.multiplier;
+        if (isGoodMultiplier && bestMission.args.size === carriedParcels.length) return 0;
+        else if ((bestMission === null || isGoodMultiplier) && distance == 0) return 1000;
 
         return priority;
     }
@@ -88,76 +97,66 @@ class Desires {
      * @returns 
      */
     calculateDeliveryPriority(parcels, belief) {
-        if (parcels.length === 0) return -1;
+        const canICarryMore = belief.config.capacity - parcels.length;
+        
+        let summedReward = 0;
+        const scoreMissions = belief.getDeliveryScoreOverrideMissions();
+        for (const parcel of parcels) {
+            for (const mission of scoreMissions) {
+                switch (mission.args.operator) {
+                    case '<': {
+                        if (mission.args.score < parcel.reward) summedReward += (parcel.reward * mission.args.multiplier);
+                        break;
+                    }
+                    case '>': {
+                        if (mission.args.score > parcel.reward) summedReward += (parcel.reward * mission.args.multiplier);
+                        break;
+                    }
+                    case '==': {
+                        if (mission.args.score === parcel.reward) summedReward += (parcel.reward * mission.args.multiplier);
+                        break;
+                    }
+                }
+            }
+            if (scoreMissions.length === 0) summedReward += parcel.reward;
+        }
 
-        const deliveryPoints = Movement.getDeliveryPoints(belief.config.map);
-        if (deliveryPoints.length === 0) return -1;
+        if (canICarryMore === 0) return summedReward;
+        const nearestDeliveryPoint = Movement.nearestDeliveryPoint(belief.config?.map, belief.me); 
+        if (belief.missions.length === 0 && nearestDeliveryPoint.distance === 0) return 100;
+        
+        const minimumReward = belief.config?.average - belief.config?.variance;
+        const minimumGoodRewardPickup = Math.floor(minimumReward * 0.5);
 
-        // Max priority if we can't carry more parcels or if we are on a delivery tile
-        if (belief.config.map.tiles[belief.me.x]?.[belief.me.y]?.toString() === '2') return 1000;
-        const carrying = parcels.length;
-        const canCarry = belief.config?.capacity ? belief.config.capacity - carrying : Infinity;
-        this.logger.debug(`We are carrying ${carrying} parcels and so we can carry ${canCarry} more`);
-        if (canCarry <= 0) return 1000;
-
-        // Distance from the nearest delivery point
-        const { distance } = Movement.nearestDeliveryPoint(belief.config.map, { x: belief.me.x, y: belief.me.y });
-        if (distance === Infinity) return -1;
-
-        // Priority is based on the distance to the nearest delivery point, and the number of parcels we can carry
-        const priority = 100 + carrying * 10;
-        return priority
+        let priority = summedReward - (canICarryMore * minimumGoodRewardPickup);
+        // Pick the mission with best multiplier
+        const bestMission = belief.getDeliveryStackMissions().sort((a, b) => b.args.multiplier - a.args.multiplier)[0];
+        if (bestMission && bestMission.args.size === parcels.length) priority *= bestMission.args.multiplier;
+        return priority;
     }
-
 
     /**
      * 
      * @param {Belief} belief 
      */
     calculateLookForParcelPriority(belief) {
-        // === Se ci sono pacchi visibili, NON cercare ===
-        const visibleFree = belief.parcels.filter(p => p.carriedBy === null).length;
+        const minimumReward = belief.config?.average - belief.config?.variance;
+        const minimumGoodRewardPickup = Math.floor(minimumReward * 0.8);
+
+        // If there are visible free parcels, pick them
+        const visibleFree = belief.parcels.filter(p => p.carriedBy === null && p.reward >= minimumGoodRewardPickup).length;
         if (visibleFree > 0) return 1;
+        const canICarryMore = belief.config.capacity - belief.parcels.filter(p => p.carriedBy === belief.me.id).length;
+        if (canICarryMore === 0) return 1;
 
-        const { decayEvent, generationEvent, variance, average, maxParcels } = belief.config;
+        let priority = 1;
+        const carriedParcels = belief.parcels.filter(p => p.carriedBy === belief.me.id);
+        // Pick the mission with best multiplier
+        const bestMission = belief.getDeliveryStackMissions().sort((a, b) => b.args.multiplier - a.args.multiplier)[0];
+        if (bestMission && bestMission.args.size < carriedParcels.length) priority *= bestMission.args.multiplier;
+        else if (bestMission && bestMission.args.size === carriedParcels.length && bestMission.args.multiplier < 1) priority *= 1 + bestMission.args.multiplier;
 
-        const decayTimeSec = Strategy.clockEventToMs(decayEvent) / 1000;
-        const genTimeSec = Strategy.clockEventToMs(generationEvent) / 1000;
-
-        // === Probabilità che un pacco nascosto sia ancora vivo ===
-        const lifetime = average * decayTimeSec;
-        const usefulProb = Math.min(1, lifetime / genTimeSec);
-
-        // === Stima distanza media per trovare un pacco ===
-        const walkableTiles = belief.config.map.tiles
-            .flat().filter(t => t.toString() !== '0').length;
-        const expectedExploreSteps = Math.sqrt(walkableTiles / (maxParcels + 1));
-
-        // === Priorità base (10-20) ===
-        const expectedReward = maxParcels * average * usefulProb;
-        let priority = expectedReward / (expectedExploreSteps + 1);
-
-        // === BONUS: Punti di spawn vuoti (vai a controllare se ci sono pacchi) ===
-        const spawnPoints = belief.config.map.tiles
-            .flatMap((row, y) => row.map((v, x) => v?.toString() === '5' ? { x, y } : null)) // '5' = spawn point
-            .filter(Boolean);
-
-        if (spawnPoints.length > 0) {
-            const emptySpawnPoints = spawnPoints.filter(sp =>
-                !belief.parcels.some(p => p.x === sp.x && p.y === sp.y && p.carriedBy === null)
-            );
-            if (emptySpawnPoints.length > 0) {
-                const distToSpawn = Math.min(
-                    ...emptySpawnPoints.map(sp =>
-                        Movement.getDistance(belief.config.map, { x: belief.me.x, y: belief.me.y }, sp, belief.enemies)
-                    )
-                );
-                priority += 50 / (distToSpawn + 1); // Bonus se spawn point vicino
-            }
-        }
-
-        // === Priorità finale (10-50) ===
-        return priority + variance / 100;
+        return priority + minimumGoodRewardPickup;
     }
 
     // ─── Helper condivisi ────────────────────────────────────────────────

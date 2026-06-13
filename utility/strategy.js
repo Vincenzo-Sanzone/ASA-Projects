@@ -119,6 +119,76 @@ class Strategy {
         return true;
     }
 
+    /**
+     * 
+     * @param {GameMap} map 
+     * @param {{x: number, y: number}} target 
+     * @param {number} maxDistance 
+     */
+    static getAllPossibleTiles(map, target, maxDistance) {
+        const possibleTiles = [];
+
+        for (let x = target.x - maxDistance; x <= target.x + maxDistance; x++) {
+            for (let y = target.y - maxDistance; y <= target.y + maxDistance; y++) {
+
+                const dx = Math.abs(x - target.x);
+                const dy = Math.abs(y - target.y);
+
+                // Manhattan distance constraint
+                if (dx + dy <= maxDistance) {
+                    if (map.tiles[x][y].toString() !== '0') {
+                        possibleTiles.push({ x, y });
+                    }
+                }
+            }
+        }
+
+        return possibleTiles;
+    }
+
+    /**
+     * 
+     * @param {GameMap} map 
+     * @param {{x: number, y: number}} me 
+     * @param {boolean} isXOdd 
+     * @param {boolean} isYOdd 
+     */
+    static findTileWith(map, me, isXOdd, isYOdd) {
+        let bestTile = null;
+        let bestDistance = Infinity;
+
+        for (let x = 0; x < map.width; x++) {
+            for (let y = 0; y < map.height; y++) {
+                const tile = map.tiles[x][y];
+                if (!tile) continue;
+
+                const x = tile.x;
+                const y = tile.y;
+
+                // X filter
+                if (isXOdd !== null) {
+                    const isOdd = x % 2 === 1;
+                    if (isOdd !== isXOdd) continue;
+                }
+
+                // Y filter
+                if (isYOdd !== null) {
+                    const isOdd = y % 2 === 1;
+                    if (isOdd !== isYOdd) continue;
+                }
+
+                const dist = Movement.getDistance(map, me, tile);
+
+                if (dist < bestDistance) {
+                    bestDistance = dist;
+                    bestTile = tile;
+                }
+            }
+        }
+
+        return bestTile;
+    }
+
     static #analyzeCluster(map, cluster, me) {
         const distancesToMe = cluster.map(t =>
             Movement.getDistance(map, me, t)

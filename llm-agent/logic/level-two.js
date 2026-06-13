@@ -1,4 +1,4 @@
-import { Logger, Mission } from "../../utility/index.js";
+import { Logger, Mission, TYPE_MISSION } from "../../utility/index.js";
 
 class LevelTwoSolver {
     constructor(parser, bdi) {
@@ -24,19 +24,23 @@ class LevelTwoSolver {
 
         if (mission === undefined) this.logger.error(`Didn't get a mission from the tool: ${response.action}`);
 
-        if (response.action === "deliveryLocationMultiplier" || response.action === "movementTilePoints") {
+        if (response.action === TYPE_MISSION.DELIVERY_LOCATION || response.action === TYPE_MISSION.MOVEMENT_TILE) {
             for (const m of mission) {
+                m.reward = response.rewards;
                 this.bdi.belief.addMission(m);
             }
         }
-        else this.bdi.belief.addMission(mission);
+        else { 
+            mission.reward = response.rewards; 
+            this.bdi.belief.addMission(mission);
+        }
     }
 
     #deliveryStackMultiplier(response) {
         if (response.size === undefined || (response.multiplier === undefined && response.bonus === undefined)) return undefined;
         if (response.multiplier)
-            return new Mission("deliveryStackMultiplier", true, { size: response.size, multiplier: response.multiplier });
-        else return new Mission("deliveryStackMultiplier", false, { size: response.size, bonus: response.bonus });
+            return new Mission(TYPE_MISSION.DELIVERY_STACK, true, { size: response.size, multiplier: response.multiplier });
+        else return new Mission(TYPE_MISSION.DELIVERY_STACK, true, { size: response.size, bonus: response.bonus });
     }
 
     #deliveryLocationMultiplier(response) {
@@ -45,9 +49,9 @@ class LevelTwoSolver {
         const missions = [];
         for (let i = 0; i < response.location.length; i += 2) {
             if (response.multiplier)
-                missions.push(new Mission("deliveryLocationMultiplier", true, { x: eval(response.location[i]), y: eval(response.location[i + 1]), multiplier: response.multiplier }));
+                missions.push(new Mission(TYPE_MISSION.DELIVERY_LOCATION, true, { x: eval(response.location[i]), y: eval(response.location[i + 1]), multiplier: response.multiplier }));
             else
-                missions.push(new Mission("deliveryLocationMultiplier", true, { x: eval(response.location[i]), y: eval(response.location[i + 1]), bonus: response.bonus }));
+                missions.push(new Mission(TYPE_MISSION.DELIVERY_LOCATION, true, { x: eval(response.location[i]), y: eval(response.location[i + 1]), bonus: response.bonus }));
 
         }
         return missions
@@ -56,8 +60,8 @@ class LevelTwoSolver {
     #deliveryScoreOverride(response) {
         if (response.operator === undefined || response.score === undefined || (response.multiplier === undefined && response.bonus === undefined)) return undefined;
         if (response.multiplier)
-            return new Mission("deliveryScoreOverride", true, { operator: response.operator, score: response.score, multiplier: response.multiplier });
-        else return new Mission("deliveryScoreOverride", true, { operator: response.operator, score: response.score, bonus: response.bonus });
+            return new Mission(TYPE_MISSION.DELIVERY_SCORE, true, { operator: response.operator, score: response.score, multiplier: response.multiplier });
+        else return new Mission(TYPE_MISSION.DELIVERY_SCORE, true, { operator: response.operator, score: response.score, bonus: response.bonus });
     }
 
     #movementTilePoints(response) {
@@ -65,8 +69,8 @@ class LevelTwoSolver {
         const missions = [];
         for (let i = 0; i < response.location.length; i += 2) {
             if (response.multiplier)
-                missions.push(new Mission("movementTilePoints", true, { x: eval(response.location[i]), y: eval(response.location[i + 1]), multiplier: response.multiplier }));
-            else missions.push(new Mission("movementTilePoints", true, { x: eval(response.location[i]), y: eval(response.location[i + 1]), bonus: response.bonus }));
+                missions.push(new Mission(TYPE_MISSION.MOVEMENT_TILE, true, { x: eval(response.location[i]), y: eval(response.location[i + 1]), multiplier: response.multiplier }));
+            else missions.push(new Mission(TYPE_MISSION.MOVEMENT_TILE, true, { x: eval(response.location[i]), y: eval(response.location[i + 1]), bonus: response.bonus }));
         }
         return missions
     }
