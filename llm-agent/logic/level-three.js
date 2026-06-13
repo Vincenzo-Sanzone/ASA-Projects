@@ -23,7 +23,6 @@ class LevelThreeSolver {
 
     async solveCoordination(message) {
         const response = await this.parser.solveLevelThree(message);
-        console.log("[DEBUG] Solving coordination mission", JSON.stringify(response, null, 2));
 
         if (this.tools[response.action] === undefined) this.logger.error(`Unknown tool: ${response.action}`);
 
@@ -33,38 +32,38 @@ class LevelThreeSolver {
 
         if (response.action === TYPE_MISSION.MOVE_NEAR) {
             for (const m of mission) {
-                m.reward = response.rewards;
+                m.reward = response.reward;
                 this.bdi.coordinator.sendMission(m);
                 this.bdi.belief.addMission(m);
             }
         }
         else {
-            mission.reward = response.rewards;
+            mission.reward = response.reward;
             this.bdi.coordinator.sendMission(mission);
             this.bdi.belief.addMission(mission);
         }
     }
 
     #moveNear(response) {
-        if (response.location === undefined || response.distance === undefined || response.bonus === undefined || response.bonus < 1) return undefined;
+        if (response.location === undefined || response.distance === undefined || response.reward === undefined || response.reward < 1) return undefined;
         
         const missions = [];
         for (let i = 0; i < response.location.length; i += 2) {
-            missions.push(new Mission(TYPE_MISSION.MOVE_NEAR, false, { x: eval(response.location[i]), y: eval(response.location[i + 1]), distance: response.distance, bonus: response.bonus }));
+            missions.push(new Mission(TYPE_MISSION.MOVE_NEAR, false, { x: eval(response.location[i]), y: eval(response.location[i + 1]), distance: eval(response.distance) }));
         }
         return missions;
     }
 
     #crossAgentDelivery(response) {
-        if (response.bonus === undefined) return undefined;
-        if (response.bonus <= 0) return undefined;
+        if (response.reward === undefined) return undefined;
+        if (response.reward <= 0) return undefined;
         
-        return new Mission(TYPE_MISSION.CROSS_AGENT, true, { bonus: response.bonus });
+        return new Mission(TYPE_MISSION.CROSS_AGENT, true);
     }
 
     #redGreenLight(response) {
-        if (response.location === undefined || response.bonus === undefined) return undefined;
-        if (response.bonus <= 0) return undefined;
+        if (response.location === undefined || response.reward === undefined) return undefined;
+        if (response.reward <= 0) return undefined;
 
         let xOdd = null;
         let yOdd = null;

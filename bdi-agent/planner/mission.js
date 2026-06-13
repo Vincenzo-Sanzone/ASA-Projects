@@ -12,11 +12,10 @@ class MissionPlan extends Plan {
         this.logger = new Logger("MissionPlan:");
     }
 
-    static isApplicable(action, mission) {
+    static isApplicable(action, mission) {;
         if (action !== 'mission') return false;
-        if (!(mission instanceof Mission)) return false;
 
-        return mission.type === TYPE_MISSION.MOVE || 
+        return mission !== undefined && mission.type === TYPE_MISSION.MOVE || 
         mission.type === TYPE_MISSION.DROP || mission.type === TYPE_MISSION.MOVE_NEAR || 
         mission.type === TYPE_MISSION.RED_GREEN_LIGHT
     }
@@ -32,7 +31,7 @@ class MissionPlan extends Plan {
      * @returns 
      */
     async execute(mission) {
-        this.logger.debug(`Solving mission ${mission.type}`);
+        this.logger.info(`Solving mission ${mission.type}`);
 
         if (mission.type === TYPE_MISSION.MOVE) await this.goTo.execute(mission.args.x, mission.args.y);
         else if (mission.type === TYPE_MISSION.DROP) await this.#drop(mission.args);
@@ -56,7 +55,7 @@ class MissionPlan extends Plan {
     async #moveNear(args) {
         const targetX = args.x
         const targetY = args.y
-        const maximumDistance = args.maximumDistance
+        const maximumDistance = args.distance
 
         const allPossibleTiles = Strategy.getAllPossibleTiles(this.intention.beliefs.config.map, { x: targetX, y: targetY }, maximumDistance);
         const closestTile = allPossibleTiles.reduce((best, tile) => {
@@ -69,11 +68,13 @@ class MissionPlan extends Plan {
         }, null);
         if (closestTile === null) return false;
 
+        console.log("[DEBUG] closestTile", closestTile);
         await this.goTo.execute(closestTile.x, closestTile.y);
 
         if (this.stopped) return false;
         this.intention.beliefs.waiting = true;
         if (this.intention.beliefs.isMyTeammateWaiting) this.intention.beliefs.coordinator.sendDone();
+        else this.intention.beliefs.coordinator.sendWaitingNearTarget();
     }
 
     async #playRedGreenLight(args) {

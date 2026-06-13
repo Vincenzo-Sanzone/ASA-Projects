@@ -17,6 +17,7 @@ class IntentionsRevise extends Intentions {
      * @param {Array} desires - The desires to convert into intentions (e.g., [{ type: 'pickup', parcelId: 'p1', priority: 5 }]).
      */
     addIntentions(desires) {
+        if (desires.length === 0) return;
         this.queue = desires.map(d => new IntentionDeliberation(d, this.beliefs, this.planner));
         this._revisePriorities();
     }

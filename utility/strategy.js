@@ -128,8 +128,8 @@ class Strategy {
     static getAllPossibleTiles(map, target, maxDistance) {
         const possibleTiles = [];
 
-        for (let x = target.x - maxDistance; x <= target.x + maxDistance; x++) {
-            for (let y = target.y - maxDistance; y <= target.y + maxDistance; y++) {
+        for (let x = target.x - maxDistance; x <= target.x + maxDistance && x < map.width && x >= 0; x++) {
+            for (let y = target.y - maxDistance; y <= target.y + maxDistance && y < map.height && y >= 0; y++) {
 
                 const dx = Math.abs(x - target.x);
                 const dy = Math.abs(y - target.y);

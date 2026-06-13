@@ -16,6 +16,8 @@ class Desires {
         // Generate desires based on the current belief. This can involve creating a list of desires that the agent wants to achieve based on the information it has about itself, other agents, parcels, and the game configuration.
         this.desires = []; // Clear previous desires    
 
+        if(belief.waiting) {return}
+
         this.logger.debug(`I know that there are ${belief.parcels.length} parcels`);
         for (const parcel of belief.parcels) {
             // Generate pickup desires for parcels that are not currently being carried by any agent.
@@ -55,7 +57,7 @@ class Desires {
     calculateMissionPriority(mission, belief) {
         if (mission.type === TYPE_MISSION.DROP && belief.parcels.filter(p => p.carriedBy === belief.me.id).length === 0) return 0;
         
-        mission.reward * 100;
+        return mission.reward * 100;
     }
 
     /**

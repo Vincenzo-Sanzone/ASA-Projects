@@ -370,7 +370,7 @@ OUTPUT FORMAT (STRICT JSON ONLY):
   "action": "moveNear | crossAgentDelivery | redGreenLight ",
   "location": "array (optional)",
   "distance": "string (optional)",
-  "bonus": "number (optional)"
+  "reward": "number"
 }
 
 ---
@@ -385,7 +385,7 @@ Output:
   "action": "moveNear",
   "location": ["2", "5*3"],
   "distance": 3,
-  "bonus": 500
+  "rewad": 500
 }
 
 ---
@@ -396,7 +396,7 @@ If a parcel is initially picked up by one agent and later delivered by the other
 Output:
 {
   "action": "crossAgentDelivery",
-  "bonus": 200
+  "reward": 200
 }
 
 ---
@@ -408,7 +408,7 @@ Output:
 {
   "action": "redGreenLight",
   "location": ["odd", "row"],
-  "bonus": 700
+  "reward": 700
 }
 
 ---

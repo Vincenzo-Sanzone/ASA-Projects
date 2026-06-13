@@ -21,6 +21,7 @@ class Movement {
      * @param { {x: string, y:string} } start - Starting position of the agent.
      * @param { {x: string, y:string} } target - Target position to move to.
      * @param {Belief} belief - The belief of the agent.
+     * @returns true if a re plan is needed.
      */
     async moveTo(start, target, belief) {
         while (belief.isNeededReconsidering) { }
@@ -37,8 +38,6 @@ class Movement {
             this.logger.debug("Start and target positions are the same")
             return;
         }
-
-
 
         let move = ""
         // Check if we have to move left
@@ -73,8 +72,8 @@ class Movement {
                 await this.#doMove(move, { x: xTarget, y: yTarget });
             }
             else {
-                // TODO ask the planner to replan
                 this.stop();
+                return true;
             }
         }
     }
@@ -171,11 +170,14 @@ class Movement {
 
                 if (tile.toString() === '0') continue;
                 if (enemies) {
+                    let blocked = false;
                     for (const enemy of enemies) {
-                        if (enemy.x % 1 !== 0 && (Math.floor(enemy.x) === nx || Math.ceil(enemy.x) === nx) && enemy.y === ny) continue;
-                        if (enemy.y % 1 !== 0 && (Math.floor(enemy.y) === ny || Math.ceil(enemy.y) === ny) && enemy.x === nx) continue;
-                        if (enemy.x === nx && enemy.y === ny) continue;
+                        if (enemy.x % 1 !== 0 && (Math.floor(enemy.x) === nx || Math.ceil(enemy.x) === nx) && enemy.y === ny) blocked = true;
+                        if (enemy.y % 1 !== 0 && (Math.floor(enemy.y) === ny || Math.ceil(enemy.y) === ny) && enemy.x === nx) blocked = true;
+                        if (enemy.x === nx && enemy.y === ny) blocked = true;
+                        if (blocked) break;
                     }
+                    if (blocked) continue;
                 }
 
                 if (['↑', '↓', '→', '←'].includes(tile.toString()) && tile.toString() !== requiredTile) continue;

@@ -18,9 +18,9 @@ class BDIAgent {
     this.belief = new Belief(this.coordinator);
     this.desires = new Desires();
     this.planner = new Planner(this.socket);
-    this.planner.registerPlan(PickUpPlan);
-    this.planner.registerPlan(LookForParcelPlan);
-    this.planner.registerPlan(DeliverPlan);
+    // this.planner.registerPlan(PickUpPlan);
+    // this.planner.registerPlan(LookForParcelPlan);
+    // this.planner.registerPlan(DeliverPlan);
     this.planner.registerPlan(MissionPlan);
     this.intentions = new IntentionsRevise(this.belief, this.planner);
   }
@@ -77,6 +77,8 @@ class BDIAgent {
       this.belief.waiting = false;
     }
 
+    this.desires.generateDesires(this.belief);
+    this.intentions.addIntentions(this.desires.desires);
   }
 
   startAgent() {

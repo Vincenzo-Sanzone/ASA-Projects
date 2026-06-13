@@ -1,4 +1,4 @@
-import { Logger, Movement } from "../../utility/index.js";
+import { Logger, Movement, saveFile } from "../../utility/index.js";
 import { Plan } from "./planner.js";
 import { GoToPddl } from "../../pddl/go-to.js";
 
@@ -43,9 +43,9 @@ class GoToPlan extends Plan {
         return true;
     }
 
-    async #moveWithAStar(beliefs, startX, startY, x, y) {
-        const path = Movement.aStar(beliefs.config?.map, { x: startX, y: startY }, { x, y }, beliefs.enemies)?.slice(1);
-
+    async #moveWithAStar(beliefs, startX, startY, finalX, finalY) {
+        let path = Movement.aStar(beliefs.config?.map, { x: startX, y: startY }, { x: finalX, y: finalY }, beliefs.enemies)?.slice(1);
+        
         // Get start x and y as string
         let startXAsString = 'x' + startX.toString();
         let startYAsString = 'y' + startY.toString();
@@ -54,8 +54,11 @@ class GoToPlan extends Plan {
             if (startXAsString === x && startYAsString === y) {
                 continue;
             }
-            await this.movement.moveTo({ x: startXAsString, y: startYAsString }, { x, y }, this.intention.beliefs);
+            const replan = await this.movement.moveTo({ x: startXAsString, y: startYAsString }, { x, y }, this.intention.beliefs);
             if (this.stopped) return false;
+            if (replan){ 
+                path = Movement.aStar(beliefs.config?.map, { x: eval(startXAsString.slice(1)), y: eval(startYAsString.slice(1)) }, { x: finalX, y: finalY }, beliefs.enemies)?.slice(1);
+            }
             startXAsString = x;
             startYAsString = y;
         }
