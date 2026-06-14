@@ -24,7 +24,6 @@ class LevelTwoSolver {
 
     async solvePersistent(message) {
         const response = await this.parser.solveLevelTwo(message);
-        console.log("[DEBUG] Solving peristent mission", JSON.stringify(response, null, 2));
 
         if (this.tools[response.action] === undefined) this.logger.error(`Unknown tool: ${response.action}`);
 

@@ -47,7 +47,6 @@ class GoToPlan extends Plan {
         
         // TODO che si fa??
         if (!path) {
-            console.log("[DEBUG] No path found", this.intention.beliefs.me.name);
             return false;
         }
 
@@ -69,7 +68,6 @@ class GoToPlan extends Plan {
                 path = Movement.aStar(beliefs.config?.map, { x: eval(startXAsString.slice(1)), y: eval(startYAsString.slice(1)) }, { x: finalX, y: finalY }, beliefs.enemies)?.slice(1);
                 // TODO CHE si fa??
                 if (!path) {
-                    console.log("[DEBUG] No path found on replan", this.intention.beliefs.me.name);
                     return false;
                 }
             }

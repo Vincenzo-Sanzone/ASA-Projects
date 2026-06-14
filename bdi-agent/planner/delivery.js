@@ -25,11 +25,9 @@ class DeliverPlan extends Plan {
     async execute() {
         const carriedParcels = this.intention.beliefs.parcels.filter(p => p.carriedBy === this.intention.beliefs.me.id);
         if (carriedParcels.length === 0) {
-            console.log("[DEBUG] No parcels to deliver", this.intention.beliefs.me.name);
             return false
         };
         if (this.intention.beliefs.thereIsCrossAgent() && !carriedParcels.some(p => p.pickedByTeammate)) {
-            console.log("[DEBUG] I have picked", carriedParcels.filter(p => p.pickedByMe).length, "parcels from teammate", this.intention.beliefs.me.name);
             return await this.#giveParcelsToTeammate();
         }
         return await this.#normalDelivery();
@@ -64,18 +62,15 @@ class DeliverPlan extends Plan {
         // Move to a tile with at least 2 bidirectional neighbours
         const tile = Strategy.findTileAccessible(this.intention.beliefs.config?.map, this.intention.beliefs.me, this.intention.beliefs.enemies);
         if (tile === null) {
-            console.log("[DEBUG] No tile with at least 2 bidirectional neighbours", this.intention.beliefs.me.name);
             return false;
         }
         // Start moving near the tile
         await this.goTo.execute(tile.x, tile.y);
         if (this.stopped) {
-            console.log("[DEBUG] Stopped", this.intention.beliefs.me.name);
             return false;
         }
         if (this.intention.beliefs.me.x === tile.x && this.intention.beliefs.me.y === tile.y) {
             this.intention.beliefs.waiting = true
-            console.log("[DEBUG] Waiting for teammate", this.intention.beliefs.me.name, new Date().toISOString(), this.intention.beliefs.me.x, this.intention.beliefs.me.y);
             await this.intention.beliefs.coordinator.sendMeetAt(tile);
         }
     

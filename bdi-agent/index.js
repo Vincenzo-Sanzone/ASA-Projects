@@ -74,7 +74,6 @@ class BDIAgent {
       if (this.belief.thereIsCrossAgent()) {
         await this.socket.emitPutdown();
         this.belief.removePassingParcels();
-        console.log("[DEBUG] Putdown sent", this.belief.me.name, new Date().toISOString());
       }
       this.belief.isMyTeammateWaiting = false;
       this.belief.waiting = false;
@@ -83,7 +82,6 @@ class BDIAgent {
       this.belief.waiting = false;
     }
     else if (data.type === "meetAt") {
-      console.log("[DEBUG] meetAt ", data, this.belief.me.name);
       this.belief.meetAt = data.target
     }
 

@@ -265,7 +265,6 @@ class Strategy {
      * @param {Array} enemies 
      */
     static findNearest(map, me, target, enemies) {
-        console.log("[DEBUG] findNearest", me, target);
         const directions = [
             [0, 1],
             [0, -1],

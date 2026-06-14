@@ -272,10 +272,6 @@ class Movement {
             missionDelivery.filter(m => m.isNegative()).map(m => `${m.args.x},${m.args.y}`)
         );
 
-        if (forbidden.size > 0) {
-            console.log("[DEBUG] Forbidden missions:", forbidden);
-        }
-
         // Avoid negative missions
         const isForbidden = (x, y) => forbidden.has(`${x},${y}`);
 
@@ -293,7 +289,6 @@ class Movement {
                 return nearest;
             }, null);
             if (best) {
-                console.log("[DEBUG] Nearest positive mission:", best.mission);
                 return best;
             }
         }

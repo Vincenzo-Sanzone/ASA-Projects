@@ -46,7 +46,6 @@ class IntentionsRevise extends Intentions {
             this.currentIntention?.stop();
         }
 
-        if (newIntention.type === "meet") console.log("[DEBUG] Intentions. Meeting with teammate at", this.beliefs.meetAt, this.beliefs.me.name);
         this.beliefs.removeNeedToReconsider();
     }  
 

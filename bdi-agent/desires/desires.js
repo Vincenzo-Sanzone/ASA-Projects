@@ -17,10 +17,7 @@ class Desires {
         this.desires = []; // Clear previous desires    
 
         if (belief.waiting) { return }
-        if (belief.meetAt) {
-            this.desires.push({ type: 'meet', priority: 100 });
-            console.log("[DEBUG] Desidero meet", belief.me.name);
-        }
+        if (belief.meetAt) this.desires.push({ type: 'meet', priority: 100 });
     
         this.logger.debug(`I know that there are ${belief.parcels.length} parcels`);
         for (const parcel of belief.parcels) {
@@ -50,7 +47,6 @@ class Desires {
         // Sort desires by priority in descending order, so that the most important desires are pursued first.
         this.desires.sort((a, b) => b.priority - a.priority);
         this.desires.forEach(desire => this.logger.debug(`Desire: ${desire.type}, Priority: ${desire.priority}`));
-        //console.log("[DEBUG] Desires:", JSON.stringify(this.desires, null, 2));
     }
 
     /**

@@ -68,7 +68,6 @@ class MissionPlan extends Plan {
         }, null);
         if (closestTile === null) return false;
 
-        console.log("[DEBUG] closestTile", closestTile);
         await this.goTo.execute(closestTile.x, closestTile.y);
 
         if (this.stopped) return false;

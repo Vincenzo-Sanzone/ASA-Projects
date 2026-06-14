@@ -13,9 +13,7 @@ class LevelOneSolver {
     }
 
     async solveAtomic(message) {
-        console.log("[DEBUG] Solving ", message);
         const response = await this.parser.solveLevelOne(message);
-        console.log("[DEBUG] Solving atomic mission", JSON.stringify(response, null, 2));
         // If we don't have a reward, then we don't need to do anything
         if(response.rewards <= 0) return;
         
