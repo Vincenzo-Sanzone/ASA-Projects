@@ -4,9 +4,11 @@ class Belief {
     /**
      * 
      * @param {Coordinator} coordinator 
+     * @param {string} teammateId
      */
-    constructor(coordinator) {
+    constructor(coordinator, teammateId, agentName) {
         this.me = null;
+        this.teammate = teammateId;
         this.enemies = []; // List of other agents with their id, x, y, timestampSeen
         this.config = null;
         this.parcels = []; // List of parcels with their id, position, reward, carriedBy, timestampSeen
@@ -17,8 +19,9 @@ class Belief {
         this.waiting = false; //Flag to indicate if we are waiting for a mission to complete
         this.isMyTeammateWaiting = false; // Flag to indicate if the teammate is waiting for the near the target mission
         this.coordinator = coordinator
+        this.meetAt = null
 
-        this.logger = new Logger("Belief:");
+        this.logger = new Logger("Belief:", agentName);
     }
 
     #initializeCrates() {
@@ -60,10 +63,13 @@ class Belief {
             const existingParcelIndex = this.parcels.findIndex(p => p.id === sensedParcel.id);
             const parcel = new Parcel(sensedParcel);
             if (existingParcelIndex !== -1) {
+                parcel.pickedByTeammate = this.parcels[existingParcelIndex].pickedByTeammate || sensedParcel.carriedBy === this.teammate
+                parcel.pickedByMe = this.parcels[existingParcelIndex].pickedByMe || sensedParcel.carriedBy === this.me.id
                 // Update existing parcel information
                 this.parcels[existingParcelIndex] = parcel;
             } else {
                 // Add new parcel
+                parcel.pickedByTeammate = sensedParcel.carriedBy === this.teammate
                 this.parcels.push(parcel);
                 this.isNeededReconsidering = true; // If a new parcel is found, we may need to reconsider our intentions, as there may be new opportunities for pickup that were not previously known.
             }
@@ -129,8 +135,15 @@ class Belief {
     /**
      * Function to remove all parcels that are currently being carried by the agent.
      */
-    removeCarriedParcel() {
+    removeDeliveredParcel() {
         this.parcels = this.parcels.filter(parcel => parcel.carriedBy !== this.me.id);
+    }
+
+    removePassingParcels() {
+        const carriedParcel = this.parcels.find(parcel => parcel.carriedBy === this.me.id);
+        for (const parcel of this.parcels) {
+            parcel.carriedBy = null;
+        }
     }
 
     /**
@@ -165,7 +178,6 @@ class Belief {
 
 
     updateConfig(config) {
-        console.log(`[DEBUG] updated config information. New config: ${config}`);
         // Update the belief about the game configuration based on the configuration information received. This can involve updating properties such as clock, capacity, decayEvent, and generationEvent based on the config data.
         this.config = new GameConfig(config);
         this.#initializeCrates();
@@ -216,6 +228,10 @@ class Belief {
 
     getMovementTilePointsMissions() {
         return this.#getMissions(TYPE_MISSION.MOVEMENT_TILE);
+    }
+
+    thereIsCrossAgent() {
+        return this.missions.some(m => m.type === TYPE_MISSION.CROSS_AGENT);
     }
 }
 

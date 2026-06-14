@@ -9,7 +9,7 @@ class LevelOneSolver {
         };
         this.bdi = bdi;
 
-        this.logger = new Logger("LevelOneSolver:");
+        this.logger = new Logger("LevelOneSolver:", bdi.belief.me.name);
     }
 
     async solveAtomic(message) {

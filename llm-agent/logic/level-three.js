@@ -18,7 +18,7 @@ class LevelThreeSolver {
         };
         this.bdi = bdi;
 
-        this.logger = new Logger("LevelThreeSolver:");
+        this.logger = new Logger("LevelThreeSolver:", bdi.belief.me.name);
     }
 
     async solveCoordination(message) {
@@ -32,12 +32,12 @@ class LevelThreeSolver {
 
         if (response.action === TYPE_MISSION.MOVE_NEAR) {
             for (const m of mission) {
-                this.bdi.coordinator.sendMission(m);
+                await this.bdi.coordinator.sendMission(m);
                 this.bdi.belief.addMission(m);
             }
         }
         else {
-            this.bdi.coordinator.sendMission(mission);
+            await this.bdi.coordinator.sendMission(mission);
             this.bdi.belief.addMission(mission);
         }
     }

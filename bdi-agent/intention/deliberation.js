@@ -18,7 +18,7 @@ class IntentionDeliberation {
         this.stopped = false;
         this.plan = null;
 
-        this.logger = new Logger("IntentionDeliberation:");
+        this.logger = new Logger("IntentionDeliberation:", beliefs.me.name);
         this.predicate = this._buildPredicate(desire);
     }
 

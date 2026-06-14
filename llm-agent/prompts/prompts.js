@@ -82,16 +82,23 @@ MISSION TYPES:
 
 TYPE 1 — ATOMIC MISSION
 - One-time executable action
-- Example: move, drop, pickup, calculate
+- move(): moves the agent to the specified position
+- moveMost(): moves the agent in the specified direction
 
 TYPE 2 — GLOBAL RULE
 - Persistent rule applied throughout the game
-- Affects future actions or scoring
+- Affects future actions or scoring, doesn't explict number of agents
+- deliveryStackMultiplier(): updates the internal rules to reward delivery of stacks of exactly size with multiplier points.
+- deliveryLocationMultiplier(): updates the internal rules to reward delivery to the specified location with multiplier points.
+- deliveryScoreOverride(): updates the internal rules to reward deliveries with the specified operator and score with multiplier points.
+- movementTilePoints(): updates the internal rules to reward movement to the specified location with points.
 
 TYPE 3 — MULTI-AGENT COORDINATION
 - Requires 2 or more agents
 - Includes synchronization, dependency, or shared constraints
-- Always includes rules + coordination logic
+- moveNear(): say to both agents to move near the specified location.
+- crossAgentDelivery(): updates the internal rules to reward the delivery done by agent B of parcels picked up by agent A.
+- redGreenLight(): updates the internal rules to play a red/green light game.
 
 ---
 

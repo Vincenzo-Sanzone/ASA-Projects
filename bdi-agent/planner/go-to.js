@@ -9,7 +9,7 @@ import { GoToPddl } from "../../pddl/go-to.js";
 class GoToPlan extends Plan {
     constructor(intention, socket) {
         super(intention, socket);
-        this.logger = new Logger("GoToPlan:");
+        this.logger = new Logger("GoToPlan:", intention.beliefs.me.name);
         this.goToPddl = new GoToPddl(this.socket, this.intention);
         this.movement = new Movement(this.socket);
     }
@@ -20,6 +20,7 @@ class GoToPlan extends Plan {
 
     stop() {
         super.stop();
+        this.stopped = true;
         this.goToPddl.stop();
         this.movement.stop();
     }
@@ -37,17 +38,18 @@ class GoToPlan extends Plan {
         }
 
         // If the map has no crates, use A*, else use PDDL
-        if (beliefs.crates.length === 0) await this.#moveWithAStar(beliefs, startX, startY, x, y);
-        else await this.#moveWithPDDL(beliefs, startX, startY, x, y);
-
-        return true;
+        if (beliefs.crates.length === 0) return await this.#moveWithAStar(beliefs, startX, startY, x, y);
+        else return await this.#moveWithPDDL(beliefs, startX, startY, x, y);
     }
 
     async #moveWithAStar(beliefs, startX, startY, finalX, finalY) {
         let path = Movement.aStar(beliefs.config?.map, { x: startX, y: startY }, { x: finalX, y: finalY }, beliefs.enemies)?.slice(1);
         
         // TODO che si fa??
-        if (!path) return false;
+        if (!path) {
+            console.log("[DEBUG] No path found", this.intention.beliefs.me.name);
+            return false;
+        }
 
         // Get start x and y as string
         let startXAsString = 'x' + startX.toString();
@@ -58,15 +60,24 @@ class GoToPlan extends Plan {
                 continue;
             }
             const replan = await this.movement.moveTo({ x: startXAsString, y: startYAsString }, { x, y }, this.intention.beliefs);
-            if (this.stopped) return false;
+            this.logger.debug("Movement completed")
+            if (this.stopped) {
+                this.logger.debug("I am stopped")
+                return false;
+            }
             if (replan){ 
                 path = Movement.aStar(beliefs.config?.map, { x: eval(startXAsString.slice(1)), y: eval(startYAsString.slice(1)) }, { x: finalX, y: finalY }, beliefs.enemies)?.slice(1);
                 // TODO CHE si fa??
-                if (!path) return false;
+                if (!path) {
+                    console.log("[DEBUG] No path found on replan", this.intention.beliefs.me.name);
+                    return false;
+                }
             }
             startXAsString = x;
             startYAsString = y;
         }
+        this.logger.debug("Reached final position");
+        return true;
     }
 
     async #moveWithPDDL(beliefs, startX, startY, x, y){
@@ -75,7 +86,7 @@ class GoToPlan extends Plan {
         const plan = await this.goToPddl.solve();
         
         if (this.stopped) return false;
-        await this.goToPddl.executePlan(plan);
+        return await this.goToPddl.executePlan(plan);
     }
 }
 

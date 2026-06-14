@@ -14,7 +14,7 @@ class MessageHandler{
         this.caller = caller
         this.bdi = bdi
 
-        this.logger = new Logger("MessageHandler:");
+        this.logger = new Logger("MessageHandler:", null);
     }
 
     /**
@@ -24,14 +24,16 @@ class MessageHandler{
      * @param {String} messages - the message 
      */
     async handleMessage(id, name, messages) {
-        this.logger.info("Handling message...", messages);
+        this.logger.info("Handling message...", messages , id, this.bdi.teammateId, id === this.bdi.teammateId);
         // The BDI sent this message, so handle it in the traditional way
-        if (id === this.bdi.teammateId) this.bdi.handleMessage(id, name, messages);
+        if (id === this.bdi.teammateId) {
+            // this.bdi.handleMessage(id, name, messages);
+            return;
+        }
 
         const router = new Router(this.caller)
         // Determine the type of the message
         const type = await router.route(messages);
-        console.log(`Router answered with type: ${type}`);
         // If the message is a tool mission, then we use the tool to handle it
         if (type === "TOOL_MISSION") {
             const strategy = new Strategy(this.bdi, this.caller)

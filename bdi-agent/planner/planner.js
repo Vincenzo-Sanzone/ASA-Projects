@@ -9,11 +9,11 @@ class Planner {
     /**
      * @param {DjsClientSocket} socket - The socket instance for game actions (e.g., emitMoveTowards, emitPickUp).
      */
-    constructor(socket) {
+    constructor(socket, agentName) {
         this.socket = socket;
         // Library of all available plans
         this.planLibrary = [];
-        this.logger = new Logger("Planner:");
+        this.logger = new Logger("Planner:", agentName);
     }
 
     /**
@@ -60,7 +60,7 @@ class Plan {
         this.intention = intention;
         this.socket = socket;
         this.stopped = false;
-        this.logger = new Logger("Plan:");
+        this.logger = new Logger("Plan:", intention.beliefs.me.name);
     }
 
     /**

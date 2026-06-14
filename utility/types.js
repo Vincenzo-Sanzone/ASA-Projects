@@ -4,6 +4,7 @@ class Agent {
      */
     constructor(sensedAgent, last = null) {
         this.id = sensedAgent.id;
+        this.name = sensedAgent.name;
         this.x = sensedAgent.x;
         this.y = sensedAgent.y;
         this.timestampSeen = Date.now();
@@ -23,6 +24,8 @@ class Parcel {
         this.reward = sensedParcel.reward;
         this.carriedBy = sensedParcel.carriedBy;
         this.timestampSeen = Date.now();
+        this.pickedByMe = false
+        this.pickedByTeammate = false
     }
 }
 

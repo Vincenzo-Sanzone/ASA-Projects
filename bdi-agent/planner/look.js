@@ -10,7 +10,7 @@ class LookForParcelPlan extends Plan {
     constructor(intention, socket) {
         super(intention, socket);
         this.goTo = new GoToPlan(this.intention, this.socket);
-        this.logger = new Logger("LookForParcelPlan:");
+        this.logger = new Logger("LookForParcelPlan:", intention.beliefs.me.name);
     }
 
     static isApplicable(action) {

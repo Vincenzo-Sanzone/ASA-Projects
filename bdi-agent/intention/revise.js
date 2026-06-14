@@ -7,9 +7,9 @@ import { Movement, Logger } from "../../utility/index.js";
  * Useful for agents that need to dynamically re-prioritize.
  */
 class IntentionsRevise extends Intentions {
-    constructor(beliefs, planner) {
-        super(beliefs, planner);
-        this.logger = new Logger("IntentionsRevise:");
+    constructor(beliefs, planner, agentName) {
+        super(beliefs, planner, agentName);
+        this.logger = new Logger("IntentionsRevise:", agentName);
     }
 
     /**
@@ -17,7 +17,10 @@ class IntentionsRevise extends Intentions {
      * @param {Array} desires - The desires to convert into intentions (e.g., [{ type: 'pickup', parcelId: 'p1', priority: 5 }]).
      */
     addIntentions(desires) {
-        if (desires.length === 0) return;
+        if (desires.length === 0) {
+            this.beliefs.removeNeedToReconsider();
+            return;
+        }
         this.queue = desires.map(d => new IntentionDeliberation(d, this.beliefs, this.planner));
         this._revisePriorities();
     }
@@ -39,9 +42,11 @@ class IntentionsRevise extends Intentions {
         }
 
         if (newIntention.priority > this.currentIntention?.desire.priority) {
-            this.logger.debug("New highest priority:", newIntention.type, newIntention.priority);
+            this.logger.info("New highest priority:", newIntention.type, newIntention.priority);
             this.currentIntention?.stop();
         }
+
+        if (newIntention.type === "meet") console.log("[DEBUG] Intentions. Meeting with teammate at", this.beliefs.meetAt, this.beliefs.me.name);
         this.beliefs.removeNeedToReconsider();
     }  
 
@@ -58,15 +63,7 @@ class IntentionsRevise extends Intentions {
      * Overrides the default isValid to check if the desire is still valid.
      */
     isValid(intention) {
-        //const isReachable = Movement.isReachable(this.beliefs.config?.map, { x: this.beliefs.me.x, y: this.beliefs.me.y }, { x: intention.desire.x, y: intention.desire.y });
-        const isReachable = true;
-        // If the intention is not reachable, it's not valid.
-        if (!isReachable) {
-            this.logger.warn("Intention not reachable:", intention.predicate);
-            return false;
-        }
-
-        // Example: Check if the parcel still exists and is not carried.
+        // Check if the parcel still exists and is not carried.
         if (intention.desire.type === 'pickup') {
             const parcel = this.beliefs.parcels.find(p => p.id === intention.desire.parcelId);
             this.logger.debug("Parcel still exists and is not carried:", parcel && !parcel.carriedBy);

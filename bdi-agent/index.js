@@ -7,6 +7,7 @@ import { IntentionsRevise } from "./intention/revise.js";
 import { Planner } from "./planner/planner.js";
 import { PickUpPlan, LookForParcelPlan, DeliverPlan, MissionPlan } from "./planner/index.js";
 import { Pddl } from "../pddl/index.js";
+import { MeetAtPlan } from "./planner/meetAt.js";
 
 
 class BDIAgent {
@@ -14,15 +15,17 @@ class BDIAgent {
   constructor(token, teammateToken) {
     this.socket = DjsConnect(process.env.HOST, token);
     this.teammateId = decodeJWT(teammateToken).id
-    this.coordinator = new Coordinator(this.socket, this.teammateId);
-    this.belief = new Belief(this.coordinator);
-    this.desires = new Desires();
-    this.planner = new Planner(this.socket);
+    this.name = decodeJWT(token).name
+    this.coordinator = new Coordinator(this.socket, this.teammateId, this.name);
+    this.belief = new Belief(this.coordinator, this.teammateId, this.name);
+    this.desires = new Desires(this.name);
+    this.planner = new Planner(this.socket, this.name);
     this.planner.registerPlan(PickUpPlan);
     this.planner.registerPlan(LookForParcelPlan);
     this.planner.registerPlan(DeliverPlan);
     this.planner.registerPlan(MissionPlan);
-    this.intentions = new IntentionsRevise(this.belief, this.planner);
+    this.planner.registerPlan(MeetAtPlan)
+    this.intentions = new IntentionsRevise(this.belief, this.planner, this.name);
   }
 
   #startSensing() {
@@ -55,11 +58,12 @@ class BDIAgent {
     });
   }
 
-  handleMessage(id, name, msg) {
+  async handleMessage(id, name, msg) {
     // If the message is not from my teammate, ignore it
     if (id !== this.teammateId) return
     const data = JSON.parse(msg);
 
+    this.intentions.beliefs.isNeededReconsidering = true;
     if (data.type === "mission") {
       this.belief.addMission(Mission.fromJSON(data.mission));
     }
@@ -67,14 +71,20 @@ class BDIAgent {
       this.belief.isMyTeammateWaiting = true;
     }
     else if (data.type === "done") {
-      if (!this.belief.isMyTeammateWaiting) {
-        this.coordinator.sendDone();
+      if (this.belief.thereIsCrossAgent()) {
+        await this.socket.emitPutdown();
+        this.belief.removePassingParcels();
+        console.log("[DEBUG] Putdown sent", this.belief.me.name, new Date().toISOString());
       }
       this.belief.isMyTeammateWaiting = false;
       this.belief.waiting = false;
     }
     else if (data.type === "resume") {
       this.belief.waiting = false;
+    }
+    else if (data.type === "meetAt") {
+      console.log("[DEBUG] meetAt ", data, this.belief.me.name);
+      this.belief.meetAt = data.target
     }
 
     this.desires.generateDesires(this.belief);

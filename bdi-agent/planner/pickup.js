@@ -10,7 +10,7 @@ class PickUpPlan extends Plan {
     constructor(intention, socket) {
         super(intention, socket);
         this.goTo = new GoToPlan(this.intention, this.socket);
-        this.logger = new Logger("PickUpPlan:");
+        this.logger = new Logger("PickUpPlan:", intention.beliefs.me.name);
     }
 
     static isApplicable(action, id) {

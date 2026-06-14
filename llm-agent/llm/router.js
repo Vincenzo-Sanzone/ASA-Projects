@@ -11,7 +11,7 @@ class Router {
     constructor(caller) {
         this.caller = caller
 
-        this.logger = new Logger("Router:");
+        this.logger = new Logger("Router:", "AgentLLM");
     }
 
     /**

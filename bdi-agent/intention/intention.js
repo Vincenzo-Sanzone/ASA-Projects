@@ -12,14 +12,14 @@ class Intentions {
      * @param {Belief} beliefs - Reference to the agent's beliefs.
      * @param {Planner} planner - Reference to the planner (finds applicable plans).
      */
-    constructor(beliefs, planner) {
+    constructor(beliefs, planner, agentName) {
         this.beliefs = beliefs;
         this.planner = planner;
         this.queue = [];          // Queue of pending intentions.
         this.currentIntention = null; // Currently executing intention.
         this.stopped = false;     // Flag to stop the loop.
 
-        this.logger = new Logger("Intentions:");
+        this.logger = new Logger("Intentions:", agentName);
     }
 
     /**
@@ -51,7 +51,7 @@ class Intentions {
      * Stops the current intention and clears the queue.
      */
     stop() {
-        this.logger.log("Stopping intentions...");
+        this.logger.error("Stopping intentions...");
         this.stopped = true;
         if (this.currentIntention) {
             this.currentIntention.stop();
@@ -94,6 +94,7 @@ class Intentions {
             // 4. Wait for the next tick (to avoid blocking the event loop).
             await new Promise(res => setImmediate(res));
         }
+        this.logger.error("Loop killed.");
     }
 }
 

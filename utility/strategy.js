@@ -190,6 +190,124 @@ class Strategy {
         return bestTile;
     }
 
+    /**
+    * Find the nearest tile that has at least 2 bidirectional neighbours.
+    *
+    * @param {GameMap} map
+    * @param {{x:number,y:number}} me
+    * @param {Array} enemies
+    * @returns {{x:number,y:number}|null}
+    */
+    static findTileAccessible(map, me, enemies = []) {
+        const directions = [
+            [0, 1],
+            [0, -1],
+            [1, 0],
+            [-1, 0]
+        ];
+
+        let bestTile = null;
+        let bestDistance = Infinity;
+
+        for (let x = 0; x < map.width; x++) {
+            for (let y = 0; y < map.height; y++) {
+
+                const tile = map.tiles[x][y];
+
+                if (!tile || tile.toString() === '0') continue;
+
+                let bidirectionalNeighbours = 0;
+
+                for (const [dx, dy] of directions) {
+
+                    const nx = x + dx;
+                    const ny = y + dy;
+
+                    if (nx < 0 || nx >= map.width || ny < 0 || ny >= map.height) continue;
+
+                    const neighbour = map.tiles[nx][ny];
+
+                    if (!neighbour || neighbour.toString() === '0') continue;
+
+                    const forward = Movement.getDistance(map, { x, y }, { x: nx, y: ny }, enemies);
+
+                    const backward = Movement.getDistance(map, { x: nx, y: ny }, { x, y }, enemies);
+
+                    if (forward === 1 && backward === 1) bidirectionalNeighbours++;
+                }
+
+                if (bidirectionalNeighbours < 2) continue;
+
+                const distanceFromMe = Movement.getDistance(
+                    map,
+                    me,
+                    { x, y },
+                    enemies
+                );
+
+                if (!Number.isFinite(distanceFromMe)) continue;
+
+                if (distanceFromMe < bestDistance) {
+                    bestDistance = distanceFromMe;
+                    bestTile = { x, y };
+                }
+            }
+        }
+
+        return bestTile;
+    }
+
+    /**
+     * Find the nearest tile to me that has distance 1 from the target (bidirectional).
+     * @param {GameMap} map 
+     * @param {{x: number, y: number}} me 
+     * @param {{x: number, y: number}} target 
+     * @param {Array} enemies 
+     */
+    static findNearest(map, me, target, enemies) {
+        console.log("[DEBUG] findNearest", me, target);
+        const directions = [
+            [0, 1],
+            [0, -1],
+            [1, 0],
+            [-1, 0]
+        ];
+
+        let bestTile = null;
+        let bestDistance = Infinity;
+
+        for (const [dx, dy] of directions) {
+
+            const x = target.x + dx;
+            const y = target.y + dy;
+
+            if (x < 0 || x >= map.width || y < 0 || y >= map.height) continue;
+
+            const tile = map.tiles[x][y];
+
+            if (!tile || tile.toString() === '0') continue;
+
+            // candidate -> target
+            const forward = Movement.getDistance(map, { x, y }, target);
+
+            // target -> candidate
+            const backward = Movement.getDistance(map, target, { x, y });
+
+            if (forward !== 1 || backward !== 1) continue;
+
+            const distanceFromMe = Movement.getDistance(map, me, { x, y }, enemies);
+
+            if (!Number.isFinite(distanceFromMe)) continue;
+
+            if (distanceFromMe < bestDistance) {
+                bestDistance = distanceFromMe;
+                bestTile = { x, y };
+            }
+        }
+
+        return bestTile;
+    }
+
     static #analyzeCluster(map, cluster, me) {
         const distancesToMe = cluster.map(t =>
             Movement.getDistance(map, me, t)

@@ -15,7 +15,7 @@ class Pddl {
         this.socket = socket;
         this.executor = new PddlExecutor();
 
-        this.logger = new Logger("PDDL:")
+        this.logger = new Logger("PDDL:", intention ? intention.beliefs.me.name : null);
         if (intention) this.addAllAction(intention.beliefs);
     }
 

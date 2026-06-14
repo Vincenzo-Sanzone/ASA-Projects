@@ -9,7 +9,7 @@ class MissionPlan extends Plan {
     constructor(intention, socket) {
         super(intention, socket);
         this.goTo = new GoToPlan(this.intention, this.socket);
-        this.logger = new Logger("MissionPlan:");
+        this.logger = new Logger("MissionPlan:", intention.beliefs.me.name);
     }
 
     static isApplicable(action, mission) {;
@@ -73,8 +73,12 @@ class MissionPlan extends Plan {
 
         if (this.stopped) return false;
         this.intention.beliefs.waiting = true;
-        if (this.intention.beliefs.isMyTeammateWaiting) this.intention.beliefs.coordinator.sendDone();
-        else this.intention.beliefs.coordinator.sendWaitingNearTarget();
+        if (this.intention.beliefs.isMyTeammateWaiting) {
+            await this.intention.beliefs.coordinator.sendDone();
+            this.intention.beliefs.isMyTeammateWaiting = false;
+            this.intention.beliefs.waiting = false;
+        }
+        else await this.intention.beliefs.coordinator.sendWaitingNearTarget();
     }
 
     async #playRedGreenLight(args) {

@@ -12,11 +12,11 @@ class Strategy {
      * @param {BDIAgent} bdi 
      * @param {Caller} caller
      */
-    constructor(bdi, caller, coordinator) {
+    constructor(bdi, caller) {
         this.bdi = bdi;
         this.parser = new MissionParser(caller);
 
-        this.logger = new Logger("Strategy:");
+        this.logger = new Logger("Strategy:", this.bdi.belief.me.name);
     }
 
 

@@ -11,7 +11,7 @@ class MissionParser {
     constructor(caller) {
         this.caller = caller
 
-        this.logger = new Logger("MissionParser:");
+        this.logger = new Logger("MissionParser:", "AgentLLM");
     }
 
     /**

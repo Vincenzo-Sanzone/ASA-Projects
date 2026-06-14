@@ -10,10 +10,11 @@ class Movement {
     constructor(socket) {
         this.socket = socket;
         this.stopped = false;
-        this.logger = new Logger("Movement:")
+        this.logger = new Logger("Movement:", null)
     }
 
     stop() {
+        this.logger.debug("Stopping movement...")
         this.stopped = true;
     }
 
@@ -24,7 +25,11 @@ class Movement {
      * @returns true if a re plan is needed.
      */
     async moveTo(start, target, belief) {
-        while (belief.isNeededReconsidering) { }
+        this.logger.agentName = belief.me.name
+        while (belief.isNeededReconsidering || belief.waiting) { 
+            if (this.stopped) return; 
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
         if (this.stopped) return;
         const xStart = parseInt(start.x.toLowerCase().replace("x", ""));
         const yStart = parseInt(start.y.toLowerCase().replace("y", ""));
@@ -92,7 +97,9 @@ class Movement {
         }));
 
         await executeUntilDone((...args) => this.socket.emitMove(...args), move);
+        this.logger.debug(`Moved to (x:${finalX}, y:${finalY})`);
         await waitForCompleteMove
+        this.logger.debug(`Arrived at (x:${finalX}, y:${finalY})`);
 
         if (finalX !== x || finalY !== y) {
             this.logger.info("We moved but didn't reach the target position");
@@ -107,7 +114,7 @@ class Movement {
      * @param {{x: number, y: number}} target 
      * @returns 
      */
-    static aStar(map, start, target, enemies) {
+    static aStar(map, start, target, enemies = []) {
         const width = map.width;
         const height = map.height;
 
@@ -215,7 +222,7 @@ class Movement {
         return path;
     }
 
-    static getDistance(map, start, target, enemies) {
+    static getDistance(map, start, target, enemies = []) {
         const path = this.aStar(map, start, target, enemies);
         return path ? path.length - 1 : Infinity;
     }

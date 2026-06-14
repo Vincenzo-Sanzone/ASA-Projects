@@ -11,7 +11,7 @@ class Cognitive {
     constructor(caller) {
         this.caller = caller
 
-        this.logger = new Logger("Cognitive:");
+        this.logger = new Logger("Cognitive:", "AgentLLM");
     }
 
     async answer(message) {

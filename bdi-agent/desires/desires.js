@@ -3,9 +3,9 @@ import { Movement, Parcel, Logger, Strategy, Mission, TYPE_MISSION } from "../..
 
 //TODO fix the priority so it becames more balanced
 class Desires {
-    constructor() {
+    constructor(agentName) {
         this.desires = [];
-        this.logger = new Logger("Desires:");
+        this.logger = new Logger("Desires:", agentName);
     }
 
     /**
@@ -17,7 +17,11 @@ class Desires {
         this.desires = []; // Clear previous desires    
 
         if (belief.waiting) { return }
-
+        if (belief.meetAt) {
+            this.desires.push({ type: 'meet', priority: 100 });
+            console.log("[DEBUG] Desidero meet", belief.me.name);
+        }
+    
         this.logger.debug(`I know that there are ${belief.parcels.length} parcels`);
         for (const parcel of belief.parcels) {
             // Generate pickup desires for parcels that are not currently being carried by any agent.
@@ -76,6 +80,12 @@ class Desires {
         const distance = Movement.getDistance(belief.config?.map, belief.me, { x: parcel.x, y: parcel.y }, belief.enemies);
 
         if (parcel.reward < minimumGoodRewardPickup) return 0;
+
+        // I don't want to pick up a parcel that i have already picked up (so we can do cross-agent delivery)
+        if (parcel.pickedByMe) return 0;
+        
+        // Priority to pick up a parcel that has been picked up by a teammate (so we can do cross-agent delivery)
+        if (parcel.pickedByTeammate) return parcel.reward + 100;
 
         let priority = 1 + parcel.reward - (distance / 5);
         const carriedParcels = belief.parcels.filter(p => p.carriedBy === belief.me.id);
@@ -140,7 +150,7 @@ class Desires {
         const minimumGoodRewardPickup = Math.floor(minimumReward * 0.8);
 
         // If there are visible free parcels, pick them
-        const visibleFree = belief.parcels.filter(p => p.carriedBy === null && p.reward >= minimumGoodRewardPickup).length;
+        const visibleFree = belief.parcels.filter(p => p.carriedBy === null && p.reward >= minimumGoodRewardPickup && !p.pickedByMe).length;
         if (visibleFree > 0) return 1;
         const canICarryMore = belief.config.capacity - belief.parcels.filter(p => p.carriedBy === belief.me.id).length;
         if (canICarryMore === 0) return 1;
