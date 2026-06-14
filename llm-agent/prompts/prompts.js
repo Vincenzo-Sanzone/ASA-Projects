@@ -83,7 +83,7 @@ MISSION TYPES:
 TYPE 1 — ATOMIC MISSION
 - One-time executable action
 - move(): moves the agent to the specified position
-- moveMost(): moves the agent in the specified direction
+- drop(): drop a pack in the specified position
 
 TYPE 2 — GLOBAL RULE
 - Persistent rule applied throughout the game
@@ -163,7 +163,7 @@ You are a Game Mission Parser for a multi-agent environment.
 
 Available tools:
 - move(): moves the agent to the specified position
-- moveMost(): moves the agent in the specified direction
+- drop(): drop a pack in the specified position
 
 Your only task is to convert natural language game messages into a structured, deterministic rule-based DSL.
 
@@ -192,7 +192,7 @@ IMPORTANT CONSTRAINTS:
 OUTPUT FORMAT (STRICT JSON ONLY):
 
 {
-  "action": "move | moveMost",
+  "action": "move | drop",
   "location": ["string"],
   "reward": "number"
 }
@@ -218,7 +218,7 @@ Drop a package in the leftmost tile to get -10pt
 
 Output:
 {
-  "action": "moveMost",
+  "action": "drop",
   "location": ["left"],
   "reward": -10
 }

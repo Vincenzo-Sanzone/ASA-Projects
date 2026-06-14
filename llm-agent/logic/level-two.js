@@ -12,10 +12,10 @@ class LevelTwoSolver {
     constructor(parser, bdi) {
         this.parser = parser;
         this.tools = {
-            deliveryStackMultiplier: this.#deliveryStackMultiplier,
-            deliveryLocationMultiplier: this.#deliveryLocationMultiplier,
-            deliveryScoreOverride: this.#deliveryScoreOverride,
-            movementTilePoints: this.#movementTilePoints
+            deliveryStackMultiplier: this.#deliveryStackMultiplier.bind(this),
+            deliveryLocationMultiplier: this.#deliveryLocationMultiplier.bind(this),
+            deliveryScoreOverride: this.#deliveryScoreOverride.bind(this),
+            movementTilePoints: this.#movementTilePoints.bind(this)
         };
         this.bdi = bdi;
 
@@ -24,7 +24,7 @@ class LevelTwoSolver {
 
     async solvePersistent(message) {
         const response = await this.parser.solveLevelTwo(message);
-
+        this.logger.info(JSON.stringify(response));
         if (this.tools[response.action] === undefined) this.logger.error(`Unknown tool: ${response.action}`);
 
         const mission = this.tools[response.action](response);

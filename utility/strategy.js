@@ -4,10 +4,12 @@ import { Belief } from "../bdi-agent/belief/belief.js";
 class Strategy {
 
     static getDeliveryWithCoordinate(map, me, args = {}) {
-        if (args.x === null || args.y === null) return null;
+        if ((args.x === undefined || args.x === null) && (args.y === undefined || args.y === null)) return null;
 
-        const isX = args.x !== null
+        const isX = args.x !== undefined && args.x !== null
+        const isY = args.y !== undefined && args.y !== null
 
+        if (isX && isY) return { x: args.x, y: args.y };
         if (isX) {
             for (let y = 0; y < map.height; y++) {
                 if (map.tiles[args.x][y] === '1') {
@@ -26,6 +28,7 @@ class Strategy {
                     }
                 }
             }
+            console.log('[DEBUG] getDeliveryWithCoordinate', bestTile)
             return bestTile;
         }
         else {
@@ -46,6 +49,7 @@ class Strategy {
                     }
                 }
             }
+            console.log('[DEBUG] getDeliveryWithCoordinate', bestTile)
             return bestTile;
         }
     }

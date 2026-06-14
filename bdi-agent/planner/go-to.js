@@ -45,7 +45,6 @@ class GoToPlan extends Plan {
     async #moveWithAStar(beliefs, startX, startY, finalX, finalY) {
         let path = Movement.aStar(beliefs.config?.map, { x: startX, y: startY }, { x: finalX, y: finalY }, beliefs.enemies)?.slice(1);
         
-        // TODO che si fa??
         if (!path) {
             return false;
         }
@@ -66,7 +65,6 @@ class GoToPlan extends Plan {
             }
             if (replan){ 
                 path = Movement.aStar(beliefs.config?.map, { x: eval(startXAsString.slice(1)), y: eval(startYAsString.slice(1)) }, { x: finalX, y: finalY }, beliefs.enemies)?.slice(1);
-                // TODO CHE si fa??
                 if (!path) {
                     return false;
                 }

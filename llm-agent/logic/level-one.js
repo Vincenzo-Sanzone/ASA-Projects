@@ -4,8 +4,8 @@ class LevelOneSolver {
     constructor(parser, bdi) {
         this.parser = parser;
         this.tools = {
-            move: this.#move,
-            moveMost: this.#moveMost,
+            move: this.#move.bind(this),
+            drop: this.#drop.bind(this),
         };
         this.bdi = bdi;
 
@@ -14,6 +14,7 @@ class LevelOneSolver {
 
     async solveAtomic(message) {
         const response = await this.parser.solveLevelOne(message);
+        this.logger.info(JSON.stringify(response));
         // If we don't have a reward, then we don't need to do anything
         if(response.rewards <= 0) return;
         
@@ -41,12 +42,13 @@ class LevelOneSolver {
      * 
      * @returns {Mission}
      */
-    #moveMost(response) {
+    #drop(response) {
+        
         if (response.location[0].startsWith("left")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {x: 0});
-        else if (response.location[0].startsWith("right")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {x: this.bdi.belief.config.width - 1});
-        else if (response.location[0].startsWith("up")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {y: 0});
-        else if (response.location[0].startsWith("down")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {y: this.bdi.belief.config.height - 1});
-        else this.logger.error(`Unknown direction: ${response.location[0]}`);
+        else if (response.location[0].startsWith("right")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {x: this.bdi.belief.config.map.width - 1});
+        else if (response.location[0].startsWith("up")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {y: this.bdi.belief.config.map.height - 1});
+        else if (response.location[0].startsWith("down")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {y: 0});
+        else return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {x: eval(response.location[0]), y: eval(response.location[1])});
     }
 }
 

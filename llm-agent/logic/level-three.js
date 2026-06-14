@@ -12,9 +12,9 @@ class LevelThreeSolver {
     constructor(parser, bdi) {
         this.parser = parser;
         this.tools = {
-            moveNear: this.#moveNear,
-            crossAgentDelivery: this.#crossAgentDelivery,
-            redGreenLight: this.#redGreenLight
+            moveNear: this.#moveNear.bind(this),
+            crossAgentDelivery: this.#crossAgentDelivery.bind(this),
+            redGreenLight: this.#redGreenLight.bind(this)
         };
         this.bdi = bdi;
 
@@ -23,7 +23,7 @@ class LevelThreeSolver {
 
     async solveCoordination(message) {
         const response = await this.parser.solveLevelThree(message);
-
+        this.logger.info(JSON.stringify(response));
         if (this.tools[response.action] === undefined) this.logger.error(`Unknown tool: ${response.action}`);
 
         const mission = this.tools[response.action](response);

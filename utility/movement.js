@@ -155,6 +155,8 @@ class Movement {
                 }
             }
 
+            if (!current) break;
+            
             const [cx, cy] = current.split(',').map(Number);
 
             if (cx === target.x && cy === target.y) {
