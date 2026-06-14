@@ -34,7 +34,6 @@ class LevelOneSolver {
         const x = eval(response.location[0]);
         const y = eval(response.location[1]);
         
-        this.logger.debug(`Moving to (${x}, ${y})`);
         return new Mission(TYPE_MISSION.MOVE, false, "add", response.reward, {x: x, y: y});
     }
 
