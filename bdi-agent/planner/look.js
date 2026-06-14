@@ -24,7 +24,7 @@ class LookForParcelPlan extends Plan {
 
     async execute() {
         // Calculate best spawn tile to move
-        const { x, y } = Strategy.getBestSpawnTile(this.intention.beliefs.config?.map, this.intention.beliefs.me);
+        const { x, y } = Strategy.getBestSpawnTile(this.intention.beliefs.config?.map, this.intention.beliefs.me, this.intention.beliefs.enemies);
 
         this.logger.info(`Moving to random spawn tile: (${x}, ${y})`);
         // Move to the random tile

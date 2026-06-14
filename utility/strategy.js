@@ -56,14 +56,14 @@ class Strategy {
      * @param { {x: number, y:number} } me - The agent's current position on the map. 
      * @returns 
      */
-    static getBestSpawnTile(map, me) {
+    static getBestSpawnTile(map, me, enemies) {
         const spawnTiles = Movement.getSpawnPoints(map);
 
         if (spawnTiles.length === 0) return false;
 
         const clustersRaw = Movement.getSpawnClusters(map, spawnTiles, 3);
 
-        const clusters = clustersRaw.map(c => Strategy.#analyzeCluster(map, c, me));
+        const clusters = clustersRaw.map(c => Strategy.#analyzeCluster(map, c, me, enemies));
 
         let best = clusters[0];
         let bestScore = -Infinity;
@@ -74,7 +74,7 @@ class Strategy {
             const deliveryScore = Strategy.#scoreDelivery(cluster);
 
             // Score based on exploration potential: how many new tiles could we explore by going to this cluster and how far it is from other clusters (to maximize coverage)
-            const explorationScore = Strategy.#scoreExploration(cluster, clustersRaw, map);
+            const explorationScore = Strategy.#scoreExploration(cluster, clustersRaw, map, enemies);
 
             const score = deliveryScore > -Infinity ? deliveryScore : explorationScore;
 
@@ -87,11 +87,11 @@ class Strategy {
         if (!best) return null;
 
         // entry tile
-        let bestTile = null;
+        let bestTile = best.cluster[0];
         let bestDist = Infinity;
 
         for (const tile of best.cluster) {
-            const distance = Movement.getDistance(map, me, tile);
+            const distance = Movement.getDistance(map, me, tile, enemies);
 
             if (distance < bestDist) {
                 bestDist = distance;
@@ -307,9 +307,9 @@ class Strategy {
         return bestTile;
     }
 
-    static #analyzeCluster(map, cluster, me) {
+    static #analyzeCluster(map, cluster, me, enemies) {
         const distancesToMe = cluster.map(t =>
-            Movement.getDistance(map, me, t)
+            Movement.getDistance(map, me, t, enemies)
         );
 
         const minDistanceToMe = Math.min(...distancesToMe);
@@ -318,7 +318,8 @@ class Strategy {
             Movement.getDistance(
                 map,
                 t,
-                Movement.nearestDeliveryPoint(map, t)
+                Movement.nearestDeliveryPoint(map, t),
+                enemies
             )
         );
 
@@ -338,7 +339,7 @@ class Strategy {
         return clusterInfo.size * 20 - clusterInfo.minDistanceToDelivery;
     }
 
-    static #scoreExploration(clusterInfo, allClusters, map) {
+    static #scoreExploration(clusterInfo, allClusters, map, enemies) {
         if (clusterInfo.minDistanceToMe <= 3) return -Infinity
         const distanceFromOtherClusters = allClusters
             .filter(c => c !== clusterInfo.cluster)
@@ -347,7 +348,7 @@ class Strategy {
                     ...c.map(t =>
                         Math.min(
                             ...clusterInfo.cluster.map(t2 =>
-                                Movement.getDistance(map, t, t2)
+                                Movement.getDistance(map, t, t2, enemies)
                             )
                         )
                     )
