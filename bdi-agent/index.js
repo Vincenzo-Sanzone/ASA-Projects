@@ -26,6 +26,9 @@ class BDIAgent {
     this.planner.registerPlan(MissionPlan);
     this.planner.registerPlan(MeetAtPlan)
     this.intentions = new IntentionsRevise(this.belief, this.planner, this.name);
+
+    this.lastEventTime = Date.now();
+    this.thinking = false;
   }
 
   #startSensing() {
@@ -33,14 +36,12 @@ class BDIAgent {
       this.belief.updateParcel(sensing.parcels);
       this.belief.updateAgents(sensing.agents);
       this.belief.updateCrates(sensing.crates);
-      this.desires.generateDesires(this.belief);
-      this.intentions.addIntentions(this.desires.desires);
+      this.requestThink();
     });
 
     this.socket.onYou((me) => {
       this.belief.updateMe(me);
-      this.desires.generateDesires(this.belief);
-      this.intentions.addIntentions(this.desires.desires);
+      this.requestThink();
     });
 
     this.socket.onConfig((config) => { this.belief.updateConfig(config); });
@@ -85,12 +86,42 @@ class BDIAgent {
       this.belief.meetAt = data.target
     }
 
-    this.desires.generateDesires(this.belief);
-    this.intentions.addIntentions(this.desires.desires);
+    this.requestThink();
   }
+
+  requestThink() {
+    this.lastEventTime = Date.now();
+    this.#think();
+  }
+
+  #startWatchdog() {
+    setInterval(() => {
+      const now = Date.now();
+
+      const idleTime = now - this.lastEventTime;
+
+      if (idleTime > 1000) {
+        this.#think();
+      }
+    }, 500);
+  }
+
+  #think() {
+    if (this.thinking) return;
+
+    this.thinking = true;
+
+    try {
+        this.desires.generateDesires(this.belief);
+        this.intentions.addIntentions(this.desires.desires);
+    } finally {
+        this.thinking = false;
+    }
+  } 
 
   startAgent() {
     this.#startSensing();
+    this.#startWatchdog();
     this.intentions.loop();
   }
 }

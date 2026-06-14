@@ -27,7 +27,6 @@ class MessageHandler{
         this.logger.info("Handling message...", messages , id, this.bdi.teammateId, id === this.bdi.teammateId);
         // The BDI sent this message, so handle it in the traditional way
         if (id === this.bdi.teammateId) {
-            // this.bdi.handleMessage(id, name, messages);
             return;
         }
 
@@ -38,8 +37,7 @@ class MessageHandler{
         if (type === "TOOL_MISSION") {
             const strategy = new Strategy(this.bdi, this.caller)
             strategy.solve(messages)
-            this.bdi.desires.generateDesires(this.bdi.belief);
-            this.bdi.intentions.addIntentions(this.bdi.desires.desires);
+            this.bdi.requestThink();
         }
         // If the message is a cognitive mission, then we answer it
         else if (type === "COGNITIVE_MISSION") {
