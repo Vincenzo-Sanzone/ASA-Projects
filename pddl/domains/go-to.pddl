@@ -14,7 +14,7 @@
     )
     (:action move-left
         :parameters (?x1 ?x2 ?y)
-        :precondition (and (agent ?x1 ?y) (not (wall ?x2 ?y)) (not (crate ?x2 ?y)) (left ?x2 ?x1) (not (right-tile ?x2 ?y)) (not (up-tile ?x2 ?y)) (not (down-tile ?x2 ?y)))
+        :precondition (and (agent ?x1 ?y) (not (wall ?x2 ?y)) (not (crate ?x2 ?y)) (left ?x2 ?x1) (not (right-tile ?x2 ?y)))
         :effect (and (agent ?x2 ?y) (not (agent ?x1 ?y)))
     )
     (:action push-left
@@ -24,7 +24,7 @@
     )
     (:action move-up
         :parameters (?x ?y1 ?y2)
-        :precondition (and (agent ?x ?y1) (not (wall ?x ?y2)) (not (crate ?x ?y2)) (up ?y2 ?y1) (not (right-tile ?x ?y2)) (not (left-tile ?x ?y2)) (not (down-tile ?x ?y2)))
+        :precondition (and (agent ?x ?y1) (not (wall ?x ?y2)) (not (crate ?x ?y2)) (up ?y2 ?y1) (not (down-tile ?x ?y2)))
         :effect (and (agent ?x ?y2) (not (agent ?x ?y1)))
     )
     (:action push-up
@@ -34,7 +34,7 @@
     )
     (:action move-right
         :parameters (?x1 ?x2 ?y)
-        :precondition (and (agent ?x1 ?y) (not (wall ?x2 ?y)) (not (crate ?x2 ?y)) (left ?x1 ?x2) (not (left-tile ?x2 ?y)) (not (up-tile ?x2 ?y)) (not (down-tile ?x2 ?y)))
+        :precondition (and (agent ?x1 ?y) (not (wall ?x2 ?y)) (not (crate ?x2 ?y)) (left ?x1 ?x2) (not (left-tile ?x2 ?y)))
         :effect (and (agent ?x2 ?y) (not (agent ?x1 ?y)))
     )
     (:action push-right
@@ -44,7 +44,7 @@
     )
     (:action move-down
         :parameters (?x ?y1 ?y2)
-        :precondition (and (agent ?x ?y1) (not (wall ?x ?y2)) (not (crate ?x ?y2)) (up ?y1 ?y2) (not (right-tile ?x ?y2)) (not (up-tile ?x ?y2)) (not (left-tile ?x ?y2)))
+        :precondition (and (agent ?x ?y1) (not (wall ?x ?y2)) (not (crate ?x ?y2)) (up ?y1 ?y2) (not (up-tile ?x ?y2)))
         :effect (and (agent ?x ?y2) (not (agent ?x ?y1)))
     )
     (:action push-down

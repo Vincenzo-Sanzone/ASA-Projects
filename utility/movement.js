@@ -126,10 +126,10 @@ class Movement {
         };
 
         const directions = [
-            { dx: 0, dy: 1, requiredTile: '↑' },
-            { dx: 0, dy: -1, requiredTile: '↓' },
-            { dx: 1, dy: 0, requiredTile: '→' },
-            { dx: -1, dy: 0, requiredTile: '←' }
+            { dx: 0, dy: -1, forbiddenTile: '↑' },
+            { dx: 0, dy: 1, forbiddenTile: '↓' },
+            { dx: -1, dy: 0, forbiddenTile: '→' },
+            { dx: 1, dy: 0, forbiddenTile: '←' }
         ];
 
         const openSet = new Set([key(start.x, start.y)]);
@@ -167,7 +167,7 @@ class Movement {
 
             const currentG = gScore.get(current);
 
-            for (const { dx, dy, requiredTile } of directions) {
+            for (const { dx, dy, forbiddenTile } of directions) {
 
                 const nx = cx + dx;
                 const ny = cy + dy;
@@ -189,7 +189,7 @@ class Movement {
                     if (blocked) continue;
                 }
 
-                if (['↑', '↓', '→', '←'].includes(tile.toString()) && tile.toString() !== requiredTile) continue;
+                if (['↑', '↓', '→', '←'].includes(tile.toString()) && tile.toString() === forbiddenTile) continue;
 
                 const tentativeG = currentG + 1;
 
