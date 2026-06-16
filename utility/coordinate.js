@@ -53,8 +53,9 @@ class Coordinator {
     /**
      * Comunicate to the teammate that the mission near the target is done
      */
-    async sendDone() {
-        await this.#send(JSON.stringify({ type: "done" }));
+    async sendDone(first = true) {
+        const data = { type: "done", first: first };
+        await this.#send(JSON.stringify(data));
     }
 
     /**

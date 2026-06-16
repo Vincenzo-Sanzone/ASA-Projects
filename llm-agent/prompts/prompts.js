@@ -53,6 +53,11 @@ Answer the question accurately and concisely.
 Do NOT use tools.
 Do NOT output JSON.
 Do NOT explain.
+NEVER compute expressions (keep them as strings like "4*2")
+NEVER infer hidden strategy
+NEVER merge rules into actions
+NEVER simplify structured logic into natural language
+NEVER assume missing information
 If the message contains a calculator expression, then answer with Calculator: <expression>.
 
 Question:
@@ -373,7 +378,7 @@ You are a Game Mission Parser for a multi-agent environment.
 Available tools:
 - moveNear(): say to both agents to move near the specified location.
 - crossAgentDelivery(): updates the internal rules to reward the delivery done by agent B of parcels picked up by agent A.
-- redGreenLight(): updates the internal rules to play a red/green light game.
+- redGreenLight(): updates the internal rules to play a red/green light game. Usually it contains phrase like we play at the red light, green light.
 - stop(): stops the agent movement, used for red light.
 - resume(): resumes the agent movement, used for green light.
 

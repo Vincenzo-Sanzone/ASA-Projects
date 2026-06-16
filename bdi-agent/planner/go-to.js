@@ -72,6 +72,8 @@ class GoToPlan extends Plan {
             startXAsString = x;
             startYAsString = y;
         }
+
+        if (beliefs.me.x !== finalX || beliefs.me.y !== finalY) return false;
         this.logger.debug("Reached final position");
         return true;
     }

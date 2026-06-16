@@ -76,6 +76,9 @@ class BDIAgent {
         await this.socket.emitPutdown();
         this.belief.removePassingParcels();
       }
+      if (data.first) {
+        this.coordinator.sendDone(false);
+      }
       this.belief.isMyTeammateWaiting = false;
       this.belief.waiting = false;
     }

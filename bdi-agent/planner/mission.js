@@ -33,11 +33,13 @@ class MissionPlan extends Plan {
     async execute(mission) {
         this.logger.info(`Solving mission ${mission.type}`);
 
-        if (mission.type === TYPE_MISSION.MOVE) await this.goTo.execute(mission.args.x, mission.args.y);
-        else if (mission.type === TYPE_MISSION.DROP) await this.#drop(mission.args);
-        else if (mission.type === TYPE_MISSION.MOVE_NEAR) await this.#moveNear(mission.args);
-        else if (mission.type === TYPE_MISSION.RED_GREEN_LIGHT) await this.#playRedGreenLight(mission.args);
+        let done;
+        if (mission.type === TYPE_MISSION.MOVE) done = await this.goTo.execute(mission.args.x, mission.args.y);
+        else if (mission.type === TYPE_MISSION.DROP) done = await this.#drop(mission.args);
+        else if (mission.type === TYPE_MISSION.MOVE_NEAR) done = await this.#moveNear(mission.args);
+        else if (mission.type === TYPE_MISSION.RED_GREEN_LIGHT) done = await this.#playRedGreenLight(mission.args);
         
+        if (!done) return false;
         if (this.stopped) return false;
 
         if (!mission.persistent) this.intention.beliefs.removeMission(mission);
@@ -48,9 +50,11 @@ class MissionPlan extends Plan {
     async #drop(args) {
         const { x, y } = Strategy.getDeliveryWithCoordinate(this.intention.beliefs.config.map, this.intention.beliefs.me, args);
         if (x === null || y === null) return false;
-        await this.goTo.execute(x, y);
-        if (this.stopped) return false;
+        const done = await this.goTo.execute(x, y);
+
+        if (this.stopped || !done) return false;
         await executeUntilDone(() => this.socket.emitPutdown());
+        return true;
     }
 
     async #moveNear(args) {
@@ -69,16 +73,14 @@ class MissionPlan extends Plan {
         }, null);
         if (closestTile === null) return false;
 
-        await this.goTo.execute(closestTile.x, closestTile.y);
+        const done = await this.goTo.execute(closestTile.x, closestTile.y);
 
-        if (this.stopped) return false;
+        if (this.stopped || !done) return false;
+
         this.intention.beliefs.waiting = true;
-        if (this.intention.beliefs.isMyTeammateWaiting) {
-            await this.intention.beliefs.coordinator.sendDone();
-            this.intention.beliefs.isMyTeammateWaiting = false;
-            this.intention.beliefs.waiting = false;
-        }
+        if (this.intention.beliefs.isMyTeammateWaiting) await this.intention.beliefs.coordinator.sendDone();
         else await this.intention.beliefs.coordinator.sendWaitingNearTarget();
+        return true;
     }
 
     async #playRedGreenLight(args) {
@@ -102,8 +104,8 @@ class MissionPlan extends Plan {
             return true;
         }
         const tile = Strategy.findTileWith(this.intention.beliefs.config.map, this.intention.beliefs.me, isXOdd, isYOdd, this.intention.beliefs.enemies);
-        await this.goTo.execute(tile.x, tile.y);
-        if (this.stopped) return false;
+        const done = await this.goTo.execute(tile.x, tile.y);
+        if (this.stopped || !done) return false;
         this.intention.beliefs.waiting = true;
         return true;
     }
