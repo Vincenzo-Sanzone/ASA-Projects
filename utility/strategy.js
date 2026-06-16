@@ -28,7 +28,6 @@ class Strategy {
                     }
                 }
             }
-            console.log('[DEBUG] getDeliveryWithCoordinate', bestTile)
             return bestTile;
         }
         else {
@@ -49,7 +48,6 @@ class Strategy {
                     }
                 }
             }
-            console.log('[DEBUG] getDeliveryWithCoordinate', bestTile)
             return bestTile;
         }
     }
@@ -112,7 +110,7 @@ class Strategy {
         const reachableTiles = []
         for (let x = 0; x < map.width; x++) {
             for (let y = 0; y < map.height; y++) {
-                if (Movement.isReachable(map, me, { x, y }, enemies) && x !== me.x && y !== me.y) {
+                if (Movement.isReachable(map, me, { x, y }, enemies) && (x !== me.x || y !== me.y)) {
                     reachableTiles.push({ x, y })
                 }
             }
@@ -214,10 +212,11 @@ class Strategy {
     *
     * @param {GameMap} map
     * @param {{x:number,y:number}} me
+    * @param {{x:number,y:number}} teammate
     * @param {Array} enemies
     * @returns {{x:number,y:number}|null}
     */
-    static findTileAccessible(map, me, enemies = []) {
+    static findTileAccessible(map, me, teammate, enemies = [], teammateEnemies = []) {
         const directions = [
             [0, 1],
             [0, -1],
@@ -226,8 +225,7 @@ class Strategy {
         ];
 
         let bestTile = null;
-        let bestDistance = Infinity;
-
+        let bestScore = Infinity;
         for (let x = 0; x < map.width; x++) {
             for (let y = 0; y < map.height; y++) {
 
@@ -257,17 +255,15 @@ class Strategy {
 
                 if (bidirectionalNeighbours < 2) continue;
 
-                const distanceFromMe = Movement.getDistance(
-                    map,
-                    me,
-                    { x, y },
-                    enemies
-                );
+                const distanceFromMe = Movement.getDistance(map, me, { x, y }, enemies);
+                let distanceFromTeammate = 0;
+                if (teammate) distanceFromTeammate = Movement.getDistance(map, teammate, { x, y }, teammateEnemies);
+                if (!Number.isFinite(distanceFromMe) || !Number.isFinite(distanceFromTeammate)) continue;
 
-                if (!Number.isFinite(distanceFromMe)) continue;
-
-                if (distanceFromMe < bestDistance) {
-                    bestDistance = distanceFromMe;
+                const score = Math.max(distanceFromMe, distanceFromTeammate);
+                
+                if (score < bestScore) {
+                    bestScore = score;
                     bestTile = { x, y };
                 }
             }

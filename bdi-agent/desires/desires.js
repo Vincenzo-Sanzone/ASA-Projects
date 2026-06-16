@@ -19,7 +19,7 @@ class Desires {
         // Generate desires based on the current belief. This can involve creating a list of desires that the agent wants to achieve based on the information it has about itself, other agents, parcels, and the game configuration.
         this.desires = []; // Clear previous desires    
 
-        if (belief.meetAt) this.desires.push({ type: 'meet', priority: 100 });
+        if (belief.meetAt) this.desires.push({ type: 'meet', priority: 50 });
 
         this.logger.debug(`I know that there are ${belief.parcels.length} parcels`);
         for (const parcel of belief.parcels) {
@@ -76,11 +76,12 @@ class Desires {
         const canICarryMore = belief.config.capacity - belief.parcels.filter(p => p.carriedBy === belief.me.id).length;
         if (canICarryMore === 0) return 0;
         const distance = Movement.getDistance(belief.config?.map, belief.me, { x: parcel.x, y: parcel.y }, belief.enemies);
+        if (distance === Infinity) return 0;
 
         if (parcel.reward < minimumGoodRewardPickup) return 0;
 
         // I don't want to pick up a parcel that i have already picked up (so we can do cross-agent delivery)
-        if (parcel.pickedByMe) return 0;
+        if (parcel.pickedByMe && !parcel.pickedByTeammate) return 0;
 
         // Priority to pick up a parcel that has been picked up by a teammate (so we can do cross-agent delivery)
         if (parcel.pickedByTeammate) return parcel.reward + 100;

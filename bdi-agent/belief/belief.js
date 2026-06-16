@@ -21,6 +21,7 @@ class Belief {
         this.coordinator = coordinator
         this.meetAt = null
         this.playRedGreen = false // Flag to indicate if we are playing red/green light
+        this.collaborationRequired = false
 
         this.logger = new Logger("Belief:", agentName);
     }
@@ -51,7 +52,15 @@ class Belief {
             this.isNeededReconsidering = true;
         }
 
+        this.coordinator.sendMe({x: this.me.x, y: this.me.y});
         this.updateRewardParcel();
+    }
+
+    updateTeammate(x, y) {
+        const teammate = this.getTeammate();
+        if (!teammate) return;
+        teammate.x = x;
+        teammate.y = y;
     }
 
     /**
@@ -64,13 +73,13 @@ class Belief {
             const existingParcelIndex = this.parcels.findIndex(p => p.id === sensedParcel.id);
             const parcel = new Parcel(sensedParcel);
             if (existingParcelIndex !== -1) {
-                parcel.pickedByTeammate = this.parcels[existingParcelIndex].pickedByTeammate || sensedParcel.carriedBy === this.teammate
+                parcel.pickedByTeammate = this.parcels[existingParcelIndex].pickedByTeammate || (sensedParcel.carriedBy !== null && sensedParcel.carriedBy !== this.me.id)
                 parcel.pickedByMe = this.parcels[existingParcelIndex].pickedByMe || sensedParcel.carriedBy === this.me.id
                 // Update existing parcel information
                 this.parcels[existingParcelIndex] = parcel;
             } else {
                 // Add new parcel
-                parcel.pickedByTeammate = sensedParcel.carriedBy === this.teammate
+                parcel.pickedByTeammate = sensedParcel.carriedBy !== null && sensedParcel.carriedBy !== this.me.id
                 this.parcels.push(parcel);
                 this.isNeededReconsidering = true; // If a new parcel is found, we may need to reconsider our intentions, as there may be new opportunities for pickup that were not previously known.
             }
@@ -158,6 +167,9 @@ class Belief {
             if (sensedAgent.id === this.me.id) {
                 continue;
             }
+            if (sensedAgent.id === this.teammate && (sensedAgent.x % 1 !== 0 || sensedAgent.y % 1 !== 0)) {
+                continue;
+            }
 
             // Check if the agent already exists in the belief. If it does, update its information; if not, add it to the belief.
             const existingAgentIndex = this.enemies.findIndex(a => a.id === sensedAgent.id);
@@ -232,7 +244,13 @@ class Belief {
     }
 
     thereIsCrossAgent() {
-        return this.missions.some(m => m.type === TYPE_MISSION.CROSS_AGENT);
+        return this.collaborationRequired || this.missions.some(m => m.type === TYPE_MISSION.CROSS_AGENT);
+    }
+
+    getTeammate() {
+        for (const enemy of this.enemies) {
+            if (enemy.id === this.teammate) return enemy;
+        }
     }
 }
 

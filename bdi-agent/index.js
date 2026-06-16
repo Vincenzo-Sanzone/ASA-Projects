@@ -92,6 +92,9 @@ class BDIAgent {
     else if (data.type === "meetAt") {
       this.belief.meetAt = data.target
     }
+    else if (data.type === "me") {
+      this.belief.updateTeammate(data.x, data.y);
+    }
 
     this.requestThink();
   }

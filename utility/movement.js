@@ -311,7 +311,7 @@ class Movement {
      * @param {GameMap} map 
      * @returns 
      */
-    static getSpawnPoints(map) {
+    static getSpawnPoints(map, enemies = []) {
         const spawnPoints = [];
         // Collect all spawn tiles
         for (let y = 0; y < map.height; y++) {

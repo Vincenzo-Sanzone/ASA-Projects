@@ -27,16 +27,20 @@ class DeliverPlan extends Plan {
         if (carriedParcels.length === 0) {
             return false
         };
-        if (this.intention.beliefs.thereIsCrossAgent() && !carriedParcels.some(p => p.pickedByTeammate)) {
-            return await this.#giveParcelsToTeammate();
+        const myNearest = Movement.nearestDeliveryPoint(this.intention.beliefs.config?.map, { x: this.intention.beliefs.me?.x, y: this.intention.beliefs.me?.y }, this.intention.beliefs.enemies, this.intention.beliefs.getDeliveryLocationMissions());
+        const newEnemis = [...this.intention.beliefs.enemies, this.intention.beliefs.me].filter(e => e.id !== this.intention.beliefs.teammate);
+        const teammate = this.intention.beliefs.getTeammate();
+        let teammateNearest = null;
+        if (teammate !== undefined) teammateNearest = Movement.nearestDeliveryPoint(this.intention.beliefs.config?.map, { x: teammate.x, y: teammate.y }, newEnemis, this.intention.beliefs.getDeliveryLocationMissions());
+        if ((this.intention.beliefs.thereIsCrossAgent() && !carriedParcels.some(p => p.pickedByTeammate)) || (myNearest === null && teammateNearest !== null)) {
+            return await this.#giveParcelsToTeammate(teammate, newEnemis);
         }
-        return await this.#normalDelivery();
+        return await this.#normalDelivery(myNearest);
 
     }
 
-    async #normalDelivery() {
+    async #normalDelivery(result) {
         // Calculate the nearest delivery point from my position
-        const result = Movement.nearestDeliveryPoint(this.intention.beliefs.config?.map, { x: this.intention.beliefs.me?.x, y: this.intention.beliefs.me?.y }, this.intention.beliefs.enemies, this.intention.beliefs.getDeliveryLocationMissions());
         if (result === null) return false;
 
         const { x, y } = result;
@@ -58,9 +62,9 @@ class DeliverPlan extends Plan {
         return true;
     }
 
-    async #giveParcelsToTeammate() {
+    async #giveParcelsToTeammate(teammate, teammateEnemies) {
         // Move to a tile with at least 2 bidirectional neighbours
-        const tile = Strategy.findTileAccessible(this.intention.beliefs.config?.map, this.intention.beliefs.me, this.intention.beliefs.enemies);
+        const tile = Strategy.findTileAccessible(this.intention.beliefs.config?.map, this.intention.beliefs.me, teammate, this.intention.beliefs.enemies, teammateEnemies);
         if (tile === null) {
             return false;
         }

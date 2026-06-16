@@ -77,6 +77,10 @@ class Coordinator {
         await this.#send(JSON.stringify(data));
     }
 
+    async sendMe(position) {
+        const data = { type: "me", ...position };
+        await this.#send(JSON.stringify(data));
+    }
 }
 
 export { Coordinator };
