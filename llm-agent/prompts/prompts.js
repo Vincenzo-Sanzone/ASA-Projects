@@ -468,6 +468,17 @@ Output:
 ---
 
 Input:
+Stop all agents. We play red light, green light. If you don't play -40 points bonus.
+
+Output:
+{
+  "action": "redGreenLight",
+  "reward": 40
+}
+
+---
+
+Input:
 Red light. Stop your agent now
 
 Output:

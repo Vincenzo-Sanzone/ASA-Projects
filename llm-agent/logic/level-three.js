@@ -30,7 +30,7 @@ class LevelThreeSolver {
             this.logger.error(`Unknown tool: ${response.action}`);
             return;
         }
-        const mission = this.tools[response.action](response);
+        const mission = await this.tools[response.action](response);
 
         if (response.action === "stop" || response.action === "resume") return;
 
@@ -47,6 +47,7 @@ class LevelThreeSolver {
         else {
             await this.bdi.coordinator.sendMission(mission);
             this.bdi.belief.addMission(mission);
+            if (response.action === TYPE_MISSION.RED_GREEN_LIGHT) {await this.#stop();}
         }
     }
 
@@ -83,13 +84,13 @@ class LevelThreeSolver {
         return new Mission(TYPE_MISSION.RED_GREEN_LIGHT, true, "add", response.reward, { xOdd: xOdd, yOdd: yOdd });
     }
 
-    #stop() {
-        this.bdi.coordinator.sendStop();
+    async #stop() {
+        await this.bdi.coordinator.sendStop();
         this.bdi.belief.playRedGreen = true;
     }
 
-    #resume() {
-        this.bdi.coordinator.sendResume();
+    async #resume() {
+        await this.bdi.coordinator.sendResume();
         this.bdi.belief.playRedGreen = false;
         this.bdi.belief.waiting = false;
     }

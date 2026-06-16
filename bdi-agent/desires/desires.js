@@ -13,6 +13,9 @@ class Desires {
      * @param {Belief} belief 
      */
     generateDesires(belief) {
+        if (belief.waiting) {
+            return
+        }
         // Generate desires based on the current belief. This can involve creating a list of desires that the agent wants to achieve based on the information it has about itself, other agents, parcels, and the game configuration.
         this.desires = []; // Clear previous desires    
 
