@@ -318,13 +318,12 @@ class Strategy {
 
         const minDistanceToMe = Math.min(...distancesToMe);
 
-        const nearestDeliveryDistances = cluster.map(t =>
-            Movement.getDistance(
-                map,
-                t,
-                Movement.nearestDeliveryPoint(map, t),
-                enemies
-            )
+        const nearestDeliveryDistances = cluster.map(t => {
+            const nearestDeliveryPoint = Movement.nearestDeliveryPoint(map, t);
+            
+            if (nearestDeliveryPoint === null) return Infinity;
+            
+            Movement.getDistance(map, t, nearestDeliveryPoint, enemies)}
         );
 
         const minDistanceToDelivery = Math.min(...nearestDeliveryDistances);
