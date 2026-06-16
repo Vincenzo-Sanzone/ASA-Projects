@@ -85,7 +85,7 @@ class Desires {
         // Priority to pick up a parcel that has been picked up by a teammate (so we can do cross-agent delivery)
         if (parcel.pickedByTeammate) return parcel.reward + 100;
 
-        let priority = 1 + parcel.reward - (distance / 5);
+        let priority = 1 + this.#getMarginalPickupReward(parcel, belief) - (distance / 5);
         const carriedParcels = belief.parcels.filter(p => p.carriedBy === belief.me.id);
 
         // Pick the mission with best multiplier
@@ -213,6 +213,20 @@ class Desires {
         }
 
         return reward;
+    }
+
+    #getMarginalPickupReward(parcel, belief) {
+        const carried = belief.parcels.filter(
+            p => p.carriedBy === belief.me.id
+        );
+
+        const scoreMissions = belief.getDeliveryScoreOverrideMissions();
+
+        const before = this.#getSummedReward(carried, scoreMissions);
+
+        const after = this.#getSummedReward([...carried, parcel], scoreMissions);
+
+        return after - before;
     }
 
 }

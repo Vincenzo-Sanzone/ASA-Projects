@@ -236,10 +236,10 @@ class Movement {
      * @param { {x: number, y:number} } target - Target coordinates to move to.
      * @returns {boolean} `true` if reachable, `false` otherwise.
      */
-    static isReachable(map, start, target) {
+    static isReachable(map, start, target, enemies = []) {
         // This method can be a simple wrapper around getDistance to check if the distance is finite.
-        const distance = this.getDistance(map, start, target);
-        return distance !== Infinity;
+        const distance = this.getDistance(map, start, target, enemies);
+        return Number.isFinite(distance) && distance > 0;
     }
 
     /** 

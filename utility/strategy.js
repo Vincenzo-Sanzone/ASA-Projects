@@ -69,8 +69,10 @@ class Strategy {
 
         const clusters = clustersRaw.map(c => Strategy.#analyzeCluster(map, c, me, enemies));
 
-        let best = clusters[0];
+        let best = null;
         let bestScore = -Infinity;
+
+        const useDeliveryScore = Math.random() > 0.5;
 
         for (const cluster of clusters) {
 
@@ -80,7 +82,7 @@ class Strategy {
             // Score based on exploration potential: how many new tiles could we explore by going to this cluster and how far it is from other clusters (to maximize coverage)
             const explorationScore = Strategy.#scoreExploration(cluster, clustersRaw, map, enemies);
 
-            const score = deliveryScore > -Infinity ? deliveryScore : explorationScore;
+            const score = useDeliveryScore ? deliveryScore : explorationScore;
 
             if (score > bestScore) {
                 bestScore = score;
@@ -91,7 +93,7 @@ class Strategy {
         if (!best) return null;
 
         // entry tile
-        let bestTile = best.cluster[0];
+        let bestTile = null;
         let bestDist = Infinity;
 
         for (const tile of best.cluster) {
@@ -104,6 +106,19 @@ class Strategy {
         }
 
         return bestTile;
+    }
+
+    static randomReachableTile(map, me, enemies) {
+        const reachableTiles = []
+        for (let x = 0; x < map.width; x++) {
+            for (let y = 0; y < map.height; y++) {
+                if (Movement.isReachable(map, me, { x, y }, enemies) && x !== me.x && y !== me.y) {
+                    reachableTiles.push({ x, y })
+                }
+            }
+        }
+        if (reachableTiles.length === 0) return null
+        return reachableTiles[Math.floor(Math.random() * reachableTiles.length)]
     }
 
     /**
