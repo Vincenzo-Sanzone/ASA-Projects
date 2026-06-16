@@ -23,6 +23,7 @@ class LevelOneSolver {
         if (mission === undefined) return
 
         this.bdi.belief.addMission(mission);
+        this.bdi.coordinator.sendMission(mission);
     }
 
     /**
