@@ -112,7 +112,7 @@ class Desires {
 
         if (canICarryMore === 0) return summedReward;
         const nearestDeliveryPoint = Movement.nearestDeliveryPoint(belief.config?.map, belief.me);
-        if (belief.missions.length === 0 && nearestDeliveryPoint.distance === 0) return 100;
+        if (belief.missions.length === 0 && nearestDeliveryPoint?.distance === 0) return 100;
 
         const minimumReward = belief.config?.average - belief.config?.variance;
         const minimumGoodRewardPickup = Math.floor(minimumReward * 0.5);
@@ -122,7 +122,7 @@ class Desires {
         const bestMission = belief.getDeliveryStackMissions().sort((a, b) => b.reward - a.reward)[0];
         if (bestMission && bestMission.args.size === parcels.length) priority = this.#applyRewardModifiers(priority, bestMission);
         
-        if (belief.missions.length === 0 && nearestDeliveryPoint.distance === 0) priority -= (canICarryMore * minimumGoodRewardPickup);
+        if (belief.missions.length === 0 && nearestDeliveryPoint?.distance === 0) priority -= (canICarryMore * minimumGoodRewardPickup);
         
         return priority;
     }
