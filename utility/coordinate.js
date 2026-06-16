@@ -57,9 +57,15 @@ class Coordinator {
         await this.#send(JSON.stringify({ type: "done" }));
     }
 
+    /**
+     * Comunicate to the teammate that there is a red light
+     */
+    async sendStop() {
+        await this.#send(JSON.stringify({ type: "stop" }));
+    }
 
     /**
-     * Comunicate to the teammate that the mission red/green light is done
+     * Comunicate to the teammate that there is a green light
      */
     async sendResume() {
         await this.#send(JSON.stringify({ type: "resume" }));

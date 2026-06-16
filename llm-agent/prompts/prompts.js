@@ -3,7 +3,7 @@ You are a mission classifier for a game agent.
 
 Your job is to classify each incoming message into one of two categories:
 
-1. TOOL_MISSION → requires actions in the environment (move, pickup, drop, etc.)
+1. TOOL_MISSION → requires actions in the environment (move, pickup, drop, stop, resume etc.)
 2. COGNITIVE_MISSION → can be answered directly using knowledge or reasoning
 
 Rules:
@@ -95,7 +95,10 @@ TYPE 2 — GLOBAL RULE
 
 TYPE 3 — MULTI-AGENT COORDINATION
 - Requires 2 or more agents
-- Includes synchronization, dependency, or shared constraints
+- Includes synchronization, dependency, shared constraints, or global multiplayer mechanics
+- Any instruction that explicitly references multiple agents, all agents, every agent, agent teams, or agent interactions
+- Any instruction that explicitly references red or green light
+- Any instruction that references stop or resume
 - moveNear(): say to both agents to move near the specified location.
 - crossAgentDelivery(): updates the internal rules to reward the delivery done by agent B of parcels picked up by agent A.
 - redGreenLight(): updates the internal rules to play a red/green light game.
@@ -177,6 +180,14 @@ You ONLY extract structured rules and actions.
 
 CORE PRINCIPLE:
 All outputs must be directly executable by a deterministic game engine without further interpretation.
+Mission reward represents the score difference between completing and not completing the mission.
+
+Examples:
+- Complete mission: +10, otherwise 0 -> reward = 10
+- Complete mission: 0, otherwise -10 -> reward = 10
+- Complete mission: +20, otherwise -10 -> reward = 30
+- Complete mission: -10, otherwise +20 -> reward = -30
+- Complete mission: -10, otherwise 0 -> reward = -10
 
 ---
 
@@ -253,6 +264,14 @@ You ONLY extract structured rules and actions.
 
 CORE PRINCIPLE:
 All outputs must be directly executable by a deterministic game engine without further interpretation.
+Mission reward represents the score difference between completing and not completing the mission.
+
+Examples:
+- Complete mission: +10, otherwise 0 -> reward = 10
+- Complete mission: 0, otherwise -10 -> reward = 10
+- Complete mission: +20, otherwise -10 -> reward = 30
+- Complete mission: -10, otherwise +20 -> reward = -30
+- Complete mission: -10, otherwise 0 -> reward = -10
 
 ---
 
@@ -350,6 +369,8 @@ Available tools:
 - moveNear(): say to both agents to move near the specified location.
 - crossAgentDelivery(): updates the internal rules to reward the delivery done by agent B of parcels picked up by agent A.
 - redGreenLight(): updates the internal rules to play a red/green light game.
+- stop(): stops the agent movement, used for red light.
+- resume(): resumes the agent movement, used for green light.
 
 Your only task is to convert natural language game messages into a structured, deterministic rule-based DSL.
 
@@ -363,6 +384,14 @@ You ONLY extract structured rules and actions.
 
 CORE PRINCIPLE:
 All outputs must be directly executable by a deterministic game engine without further interpretation.
+Mission reward represents the score difference between completing and not completing the mission.
+
+Examples:
+- Complete mission: +10, otherwise 0 -> reward = 10
+- Complete mission: 0, otherwise -10 -> reward = 10
+- Complete mission: +20, otherwise -10 -> reward = 30
+- Complete mission: -10, otherwise +20 -> reward = -30
+- Complete mission: -10, otherwise 0 -> reward = -10
 
 ---
 
@@ -416,13 +445,44 @@ Output:
 ---
 
 Input:
-All agents must move to an odd-numbered row and wait for our message before moving again, as in a “red light, green light” game. 700 points bonus.
+All agents must move to an odd-numbered row and wait for our message before moving again, as in a “red light, green light” game. If you don't do -700 points bonus.
 
 Output:
 {
   "action": "redGreenLight",
   "location": ["odd", "row"],
   "reward": 700
+}
+
+---
+
+Input:
+From now on, all agents must play red light, green light. If you do -700 points bonus.
+
+Output:
+{
+  "action": "redGreenLight",
+  "reward": -700
+}
+
+---
+
+Input:
+Red light. Stop your agent now
+
+Output:
+{
+  "action": "stop"
+}
+
+---
+
+Input:
+Your agents can now move.
+
+Output:
+{
+  "action": "resume"
 }
 
 ---

@@ -40,7 +40,8 @@ class MissionPlan extends Plan {
         
         if (this.stopped) return false;
 
-        this.intention.beliefs.removeMission(mission);
+        if (!mission.persistent) this.intention.beliefs.removeMission(mission);
+        
         return true;
     }
 

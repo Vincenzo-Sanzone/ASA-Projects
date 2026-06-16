@@ -286,7 +286,7 @@ class Movement {
                 const distance = this.getDistance(map, start, mission.args, enemies);
                 if (!Number.isFinite(distance)) return nearest;
                 if (!nearest || distance < nearest.distance) {
-                    return { distance, x, y, mission };
+                    return { distance, x, y };
                 }
                 return nearest;
             }, null);

@@ -20,6 +20,7 @@ class Belief {
         this.isMyTeammateWaiting = false; // Flag to indicate if the teammate is waiting for the near the target mission
         this.coordinator = coordinator
         this.meetAt = null
+        this.playRedGreen = false // Flag to indicate if we are playing red/green light
 
         this.logger = new Logger("Belief:", agentName);
     }

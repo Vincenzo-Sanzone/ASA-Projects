@@ -14,7 +14,9 @@ class LevelThreeSolver {
         this.tools = {
             moveNear: this.#moveNear.bind(this),
             crossAgentDelivery: this.#crossAgentDelivery.bind(this),
-            redGreenLight: this.#redGreenLight.bind(this)
+            redGreenLight: this.#redGreenLight.bind(this),
+            stop: this.#stop.bind(this),
+            resume: this.#resume.bind(this)
         };
         this.bdi = bdi;
 
@@ -24,12 +26,18 @@ class LevelThreeSolver {
     async solveCoordination(message) {
         const response = await this.parser.solveLevelThree(message);
         this.logger.info(JSON.stringify(response));
-        if (this.tools[response.action] === undefined) this.logger.error(`Unknown tool: ${response.action}`);
-
+        if (this.tools[response.action] === undefined) {
+            this.logger.error(`Unknown tool: ${response.action}`);
+            return;
+        }
         const mission = this.tools[response.action](response);
 
-        if (mission === undefined) this.logger.error(`Didn't get a mission from the tool: ${response.action}`);
+        if (response.action === "stop" || response.action === "resume") return;
 
+        if (mission === undefined || mission.length === 0) {
+            this.logger.error(`Didn't get a mission from the tool: ${response.action}`);
+            return;
+        }
         if (response.action === TYPE_MISSION.MOVE_NEAR) {
             for (const m of mission) {
                 await this.bdi.coordinator.sendMission(m);
@@ -60,20 +68,30 @@ class LevelThreeSolver {
     }
 
     #redGreenLight(response) {
-        if (response.location === undefined || (response.reward === undefined)) return undefined;
-        if (response.reward <= 0) return undefined;
+        if (response.reward === undefined || response.reward <= 0) return undefined;
 
         let xOdd = null;
         let yOdd = null;
 
-        for (let i=0; i < response.location.length; i++) {
+        for (let i=0; i < response.location?.length; i++) {
             let isOdd = true;
             if (response.location[i] === "even") isOdd=false;
             if (response.location[i+1] === "row") xOdd = isOdd;
             if (response.location[i+1] === "column") yOdd = isOdd;
         }
         
-        return new Mission(TYPE_MISSION.RED_GREEN_LIGHT, false, "add", response.reward, { xOdd: xOdd, yOdd: yOdd });
+        return new Mission(TYPE_MISSION.RED_GREEN_LIGHT, true, "add", response.reward, { xOdd: xOdd, yOdd: yOdd });
+    }
+
+    #stop() {
+        this.bdi.coordinator.sendStop();
+        this.bdi.belief.playRedGreen = true;
+    }
+
+    #resume() {
+        this.bdi.coordinator.sendResume();
+        this.bdi.belief.playRedGreen = false;
+        this.bdi.belief.waiting = false;
     }
 }
 

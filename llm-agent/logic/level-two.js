@@ -25,11 +25,14 @@ class LevelTwoSolver {
     async solvePersistent(message) {
         const response = await this.parser.solveLevelTwo(message);
         this.logger.info(JSON.stringify(response));
-        if (this.tools[response.action] === undefined) this.logger.error(`Unknown tool: ${response.action}`);
+        if (this.tools[response.action] === undefined) {
+            this.logger.error(`Unknown tool: ${response.action}`);
+            return;
+        }
 
         const mission = this.tools[response.action](response);
 
-        if (mission === undefined) this.logger.error(`Didn't get a mission from the tool: ${response.action}`);
+        if (mission === undefined || mission.length === 0) this.logger.error(`Didn't get a mission from the tool: ${response.action}`);
 
         if (response.action === TYPE_MISSION.DELIVERY_LOCATION || response.action === TYPE_MISSION.MOVEMENT_TILE) {
             for (const m of mission) {

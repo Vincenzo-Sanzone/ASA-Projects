@@ -16,7 +16,6 @@ class Desires {
         // Generate desires based on the current belief. This can involve creating a list of desires that the agent wants to achieve based on the information it has about itself, other agents, parcels, and the game configuration.
         this.desires = []; // Clear previous desires    
 
-        if (belief.waiting) { return }
         if (belief.meetAt) this.desires.push({ type: 'meet', priority: 100 });
 
         this.logger.debug(`I know that there are ${belief.parcels.length} parcels`);
@@ -34,9 +33,9 @@ class Desires {
         // Generate look for parcel desires. Low priority, so it is done only if there are no pickup or delivery desires, and it is useful to update the belief about parcels that may have changed since the last sensing.
         this.desires.push({ type: 'lookForParcel', priority: this.calculateLookForParcelPriority(belief) });
 
-        if (belief.thereIsAtomicMission) {
+        if (belief.thereIsAtomicMission || belief.playRedGreen) {
             for (const mission of belief.missions) {
-                if (!mission.persistent) {
+                if (!mission.persistent || (belief.playRedGreen && mission.type === TYPE_MISSION.RED_GREEN_LIGHT)) {
                     this.desires.push({ type: 'mission', mission: mission, priority: this.calculateMissionPriority(mission, belief) });
                 }
             }

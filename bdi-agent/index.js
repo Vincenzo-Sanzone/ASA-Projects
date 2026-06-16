@@ -79,7 +79,11 @@ class BDIAgent {
       this.belief.isMyTeammateWaiting = false;
       this.belief.waiting = false;
     }
+    else if (data.type === "stop") {
+      this.belief.playRedGreen = true;
+    }
     else if (data.type === "resume") {
+      this.belief.playRedGreen = false;
       this.belief.waiting = false;
     }
     else if (data.type === "meetAt") {
