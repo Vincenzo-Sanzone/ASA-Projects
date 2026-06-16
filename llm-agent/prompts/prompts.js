@@ -3,7 +3,7 @@ You are a mission classifier for a game agent.
 
 Your job is to classify each incoming message into one of two categories:
 
-1. TOOL_MISSION → requires actions in the environment (move, pickup, drop, stop, resume etc.)
+1. TOOL_MISSION → requires actions in the environment (move, pickup, drop, stop, resume, parcels, tile, etc.)
 2. COGNITIVE_MISSION → can be answered directly using knowledge or reasoning
 
 Rules:
@@ -17,8 +17,7 @@ Message:
 
 Output format:
 {
-  "type": "TOOL_MISSION" | "COGNITIVE_MISSION",
-  "summary": "...",
+  "type": "TOOL_MISSION" | "COGNITIVE_MISSION"
 }
 
 Example input:
@@ -26,8 +25,15 @@ Move to coordinate (4,7) and get 10 points
 
 Example output:
 {
-  "type": "TOOL_MISSION",
-  "summary": "Move agent to coordinate (4,7)"
+  "type": "TOOL_MISSION"
+}
+
+Example input:
+If you deliver parcels with a score higher than 10, you get no reward.
+
+Example output:
+{
+  "type": "TOOL_MISSION"
 }
 
 Example input:
@@ -35,8 +41,7 @@ What is the capital of Italy?
 
 Example output:
 {
-  "type": "COGNITIVE_MISSION",
-  "summary": "Answer general knowledge question"
+  "type": "COGNITIVE_MISSION"
 }
 `.trim()
 
@@ -328,7 +333,7 @@ Output:
 ---
 
 Input:
-If you deliver parcels with a score higher than 10, you get no reward.
+If you deliver parcels with a score higher than 10, you get no reward/points.
 
 Output:
 {

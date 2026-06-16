@@ -48,7 +48,7 @@ class LevelTwoSolver {
 
     #deliveryStackMultiplier(response) {
         if (response.size === undefined || (response.multiplier === undefined && response.reward === undefined)) return undefined;
-        if (response.multiplier)
+        if (response.multiplier !== undefined)
             return new Mission(TYPE_MISSION.DELIVERY_STACK, true, "multiplier", response.multiplier, { size: response.size});
         else return new Mission(TYPE_MISSION.DELIVERY_STACK, true, "add", response.reward, { size: response.size });
     }
@@ -58,7 +58,7 @@ class LevelTwoSolver {
 
         const missions = [];
         for (let i = 0; i < response.location.length; i += 2) {
-            if (response.multiplier)
+            if (response.multiplier !== undefined)
                 missions.push(new Mission(TYPE_MISSION.DELIVERY_LOCATION, true, "multiplier", response.multiplier, { x: eval(response.location[i]), y: eval(response.location[i + 1]) }));
             else
                 missions.push(new Mission(TYPE_MISSION.DELIVERY_LOCATION, true, "add", response.reward, { x: eval(response.location[i]), y: eval(response.location[i + 1]) }));
@@ -69,16 +69,16 @@ class LevelTwoSolver {
 
     #deliveryScoreOverride(response) {
         if (response.operator === undefined || response.score === undefined || (response.multiplier === undefined && response.reward === undefined)) return undefined;
-        if (response.multiplier)
-            return new Mission(TYPE_MISSION.DELIVERY_SCORE, true, "multiplier", response.multiplier, { operator: response.operator, score: response.score });
-        else return new Mission(TYPE_MISSION.DELIVERY_SCORE, true, "add", response.reward, { operator: response.operator, score: response.score });
+        if (response.multiplier !== undefined)
+            return new Mission(TYPE_MISSION.DELIVERY_SCORE, true, "multiplier", response.multiplier, { operator: response.operator, score: response.score, single: response.single });
+        else return new Mission(TYPE_MISSION.DELIVERY_SCORE, true, "add", response.reward, { operator: response.operator, score: response.score, single: response.single });
     }
 
     #movementTilePoints(response) {
         if (response.location === undefined || (response.reward === undefined && response.multiplier === undefined)) return undefined;
         const missions = [];
         for (let i = 0; i < response.location.length; i += 2) {
-            if (response.multiplier)
+            if (response.multiplier !== undefined)
                 missions.push(new Mission(TYPE_MISSION.MOVEMENT_TILE, true, "multiplier", response.multiplier, { x: eval(response.location[i]), y: eval(response.location[i + 1]) }));
             else missions.push(new Mission(TYPE_MISSION.MOVEMENT_TILE, true, "add", response.reward, { x: eval(response.location[i]), y: eval(response.location[i + 1]) }));
         }

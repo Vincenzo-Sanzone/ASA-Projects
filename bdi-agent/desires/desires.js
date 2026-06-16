@@ -107,10 +107,8 @@ class Desires {
     calculateDeliveryPriority(parcels, belief) {
         const canICarryMore = belief.config.capacity - parcels.length;
 
-        ;
         const scoreMissions = belief.getDeliveryScoreOverrideMissions();
         const summedReward = this.#getSummedReward(parcels, scoreMissions);
-
 
         if (canICarryMore === 0) return summedReward;
         const nearestDeliveryPoint = Movement.nearestDeliveryPoint(belief.config?.map, belief.me);
@@ -123,7 +121,10 @@ class Desires {
         // Pick the mission with best multiplier
         const bestMission = belief.getDeliveryStackMissions().sort((a, b) => b.reward - a.reward)[0];
         if (bestMission && bestMission.args.size === parcels.length) priority = this.#applyRewardModifiers(priority, bestMission);
-        return priority - (canICarryMore * minimumGoodRewardPickup);
+        
+        if (belief.missions.length === 0 && nearestDeliveryPoint.distance === 0) priority -= (canICarryMore * minimumGoodRewardPickup);
+        
+        return priority;
     }
 
     #getSummedReward(parcels, scoreMissions) {
@@ -133,14 +134,16 @@ class Desires {
         if (isSingleMission) {
             for (const parcel of parcels) {
                 for (const mission of scoreMissions) {
-                    if (mission.args.single) break;
+                    if (!mission.args.single) break;
                     switch (mission.args.operator) {
                         case '<': {
-                            if (parcel.reward < mission.args.score) summedReward += this.#applyRewardModifiers(parcel.reward, mission);
+                            if (parcel.reward < mission.args.score) summedReward += this.#applyRewardModifiers(parcel.reward, mission, false);
+                            else summedReward += parcel.reward;
                             break;
                         }
                         case '>': {
-                            if (parcel.reward > mission.args.score) summedReward += this.#applyRewardModifiers(parcel.reward, mission);
+                            if (parcel.reward > mission.args.score) summedReward += this.#applyRewardModifiers(parcel.reward, mission, false);
+                            else summedReward += parcel.reward;
                             break;
                         }
                     }
@@ -150,13 +153,14 @@ class Desires {
         else {
             summedReward = parcels.reduce((sum, parcel) => sum + parcel.reward, 0);
             for (const mission of scoreMissions) {
+                if (mission.args.single) break;
                 switch (mission.args.operator) {
                     case '<': {
-                        if (summedReward < mission.args.score) summedReward += this.#applyRewardModifiers(summedReward, mission);
+                        if (summedReward < mission.args.score) summedReward += this.#applyRewardModifiers(summedReward, mission, false);
                         break;
                     }
                     case '>': {
-                        if (summedReward > mission.args.score) summedReward += this.#applyRewardModifiers(summedReward, mission);
+                        if (summedReward > mission.args.score) summedReward += this.#applyRewardModifiers(summedReward, mission, false);
                         break;
                     }
                 }
@@ -186,7 +190,6 @@ class Desires {
         if (bestMission && bestMission.args.size < carriedParcels.length) priority = this.#applyRewardModifiers(priority, bestMission);
         else if (bestMission && bestMission.args.size === carriedParcels.length && bestMission.isNegative()) priority = this.#applyRewardModifiers(priority, bestMission);
 
-
         return priority + minimumGoodRewardPickup;
     }
 
@@ -197,13 +200,21 @@ class Desires {
      * @param {Mission} mission 
      * @returns 
      */
-    #applyRewardModifiers(baseReward, mission) {
+    #applyRewardModifiers(baseReward, mission, wantAsPositive = true) {
         let reward = baseReward;
 
-        const { operation: type, reward: value } = mission.getAsPositive();
-
+        let type, value;
+        if (wantAsPositive) {
+            const result  = mission.getAsPositive();
+            type = result.operation;
+            value = result.reward;
+        }
+        else {
+            type = mission.operation;
+            value = mission.reward;
+        }
         switch (type) {
-            case "multiply":
+            case "multiplier":
                 reward *= value;
                 break;
 
