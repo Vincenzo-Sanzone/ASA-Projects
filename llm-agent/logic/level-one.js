@@ -15,9 +15,7 @@ class LevelOneSolver {
     async solveAtomic(message) {
         const response = await this.parser.solveLevelOne(message);
         this.logger.info(JSON.stringify(response));
-        // If we don't have a reward, then we don't need to do anything
-        if(response.rewards <= 0) return;
-        
+        // If we don't have a reward, then we don't need to do anything        
         if (this.tools[response.action] === undefined) this.logger.error(`Unknown tool: ${response.action}`);
         
         const mission = this.tools[response.action](response);
@@ -43,7 +41,7 @@ class LevelOneSolver {
      * @returns {Mission}
      */
     #drop(response) {
-        
+        if (response.reward <= 0) return;
         if (response.location[0].startsWith("left")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {x: 0});
         else if (response.location[0].startsWith("right")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {x: this.bdi.belief.config.map.width - 1});
         else if (response.location[0].startsWith("up")) return new Mission(TYPE_MISSION.DROP, false, "add", response.reward, {y: this.bdi.belief.config.map.height - 1});
