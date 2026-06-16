@@ -274,6 +274,7 @@ OUTPUT FORMAT (STRICT JSON ONLY):
   "location": "array (optional)",
   "operator": "string (optional)",
   "score": "number (optional)",
+  "single": "boolean (optional)",
   "reward": "number (optional)"
 }
 
@@ -315,8 +316,11 @@ Output:
   "action": "deliveryScoreOverride",
   "operator": ">",
   "score": 10,
+  "single": true,
   "multiplier": 0
 }
+
+Note you use single=true if the rules is only for the reward of one parcel, and single=false if it is for total reward of parcels
 
 ---
 
