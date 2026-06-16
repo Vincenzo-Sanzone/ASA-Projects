@@ -14,7 +14,7 @@ class BDIAgent {
 
   constructor(token, teammateToken) {
     this.socket = DjsConnect(process.env.HOST, token);
-    this.teammateId = decodeJWT(teammateToken).id
+    if (teammateToken) this.teammateId = decodeJWT(teammateToken).id
     this.name = decodeJWT(token).name
     this.coordinator = new Coordinator(this.socket, this.teammateId, this.name);
     this.belief = new Belief(this.coordinator, this.teammateId, this.name);
