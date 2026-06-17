@@ -30,6 +30,7 @@ class BDIAgent {
     this.lastEventTime = Date.now();
     this.thinking = false;
     this.thinkRequested = false;
+    this.messages = [];
   }
 
   #startSensing() {
@@ -52,7 +53,7 @@ class BDIAgent {
       Pddl.clearCache();
     });
 
-    this.socket.onMsg((id, name, msg) => { this.handleMessage(id, name, msg); });
+    this.socket.onMsg((id, name, msg) => { this.messages.push([id, name, msg]); });
 
     this.socket.onDisconnect((reason, other) => {
       console.log("[DEBUG] Disconnected from Deliveroo, shutting down...", reason, other);
@@ -111,9 +112,15 @@ class BDIAgent {
 
       const idleTime = now - this.lastEventTime;
 
-      if (this.thinkRequested || idleTime > 1000) {
+      if (this.thinkRequested || idleTime > 2000) {
         this.thinkRequested = false;
         this.#think();
+      }
+      if (this.messages.length > 0) {
+        const id = this.messages.shift();
+        const name = this.messages.shift();
+        const msg = this.messages.shift();
+        this.handleMessage(id, name, msg);
       }
     }, 100);
   }

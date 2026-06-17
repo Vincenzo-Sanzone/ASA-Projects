@@ -11,15 +11,24 @@ class LLMAgent {
         if (!apiKey) {
             throw new Error("Missing LITELLM_API_KEY environment variable");
         }
-        this.client = new OpenAI({baseURL, apiKey})
+        this.client = new OpenAI({ baseURL, apiKey })
         this.caller = new Caller(this.client, this.MODEL)
         this.bdi = new BDIAgent(token, bdiToken)
 
         this.handler = new MessageHandler(this.caller, this.bdi)
+        this.messages = []
     }
 
     #listenToMessages() {
-        this.bdi.socket.onMsg((id, name, msg) => {this.handler.handleMessage(id, name, msg)})
+        this.bdi.socket.onMsg((id, name, msg) => { this.messages.push(id, name, msg); })
+        setInterval(() => {
+            if (this.messages.length > 0) {
+                const id = this.messages.shift();
+                const name = this.messages.shift();
+                const msg = this.messages.shift(); 
+                this.handler.handleMessage(id, name, msg);
+            }
+        }, 100);
     }
 
     startAgent() {
