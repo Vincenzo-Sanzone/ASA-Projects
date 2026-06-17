@@ -4,6 +4,7 @@ import { Belief } from "../bdi-agent/belief/belief.js";
 class Movement {
     static #spawnClusterCache = null;
     static #cache = new Map();
+    static #nearestDeliveryCache = new Map();
 
     /**
      * 
@@ -27,10 +28,9 @@ class Movement {
      * @returns true if a re plan is needed.
      */
     async moveTo(start, target, belief) {
-        this.logger.agentName = belief.me.name
         while (belief.isNeededReconsidering || belief.waiting) {
             if (this.stopped) return;
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
         if (this.stopped) return;
         const xStart = parseInt(start.x.toLowerCase().replace("x", ""));
@@ -119,9 +119,111 @@ class Movement {
     static aStar(map, start, target, enemies = []) {
         const cacheKey = this.#buildCacheKey(map, start, target, enemies);
 
-        if (this.#cache.has(cacheKey)) {
-            return this.#cache.get(cacheKey);
+        const cachedPath = this.#cache.get(cacheKey.without);
+
+        if (cachedPath && Movement.#isPathStillValid(cachedPath, enemies)) {
+            return cachedPath;
+        } else if (this.#cache.has(cacheKey.with)) {
+            return this.#cache.get(cacheKey.with)
+        } else if (cachedPath) {
+            Movement.#aStarEnemies(map, start, target, enemies);
+            return this.#cache.get(cacheKey.with);
         }
+
+        const width = map.width;
+        const height = map.height;
+
+        const key = (x, y) => `${x},${y}`;
+
+        const heuristic = (x, y) => {
+            // Manhattan distance (perfetta per griglia 4-direzioni)
+            return Math.abs(x - target.x) + Math.abs(y - target.y);
+        };
+
+        const directions = [
+            { dx: 0, dy: -1, forbiddenTile: '↑' },
+            { dx: 0, dy: 1, forbiddenTile: '↓' },
+            { dx: -1, dy: 0, forbiddenTile: '→' },
+            { dx: 1, dy: 0, forbiddenTile: '←' }
+        ];
+
+        const openSet = new Set([key(start.x, start.y)]);
+        const cameFrom = new Map();
+
+        const gScore = new Map();
+        const fScore = new Map();
+
+        gScore.set(key(start.x, start.y), 0);
+        fScore.set(key(start.x, start.y), heuristic(start.x, start.y));
+
+        while (openSet.size > 0) {
+
+            // trova nodo con fScore minimo
+            let current = null;
+            let bestF = Infinity;
+
+            for (const k of openSet) {
+                const f = fScore.get(k) ?? Infinity;
+                if (f < bestF) {
+                    bestF = f;
+                    current = k;
+                }
+            }
+
+            if (!current) break;
+
+            const [cx, cy] = current.split(',').map(Number);
+
+            if (cx === target.x && cy === target.y) {
+                const path = this.#reconstructPath(cameFrom, current);
+                this.#cache.set(cacheKey.without, path);
+                return path;
+            }
+
+            openSet.delete(current);
+
+            const currentG = gScore.get(current);
+
+            for (const { dx, dy, forbiddenTile } of directions) {
+
+                const nx = cx + dx;
+                const ny = cy + dy;
+                const nKey = key(nx, ny);
+
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+
+                const tile = map.tiles[nx][ny];
+
+                if (tile.toString() === '0') continue;
+
+                if (['↑', '↓', '→', '←'].includes(tile.toString()) && tile.toString() === forbiddenTile) continue;
+
+                const tentativeG = currentG + 1;
+
+                if (tentativeG < (gScore.get(nKey) ?? Infinity)) {
+
+                    cameFrom.set(nKey, current);
+
+                    gScore.set(nKey, tentativeG);
+                    fScore.set(nKey, tentativeG + heuristic(nx, ny));
+
+                    openSet.add(nKey);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 
+     * @param {GameMap} map 
+     * @param {{x: number, y: number}} start 
+     * @param {{x: number, y: number}} target 
+     * @returns 
+     */
+    static #aStarEnemies(map, start, target, enemies = []) {
+        const cacheKey = this.#buildCacheKey(map, start, target).with;
 
         const width = map.width;
         const height = map.height;
@@ -273,6 +375,9 @@ class Movement {
      */
     static nearestDeliveryPoint(map, start, enemies = [], missionDelivery = []) {
 
+        if (enemies.length === 0 && missionDelivery.length === 0) {
+            return this.#nearestDeliveryCache.get(`${start.x},${start.y}`) ?? null;
+        }
         const deliveryPoints = this.getDeliveryPoints(map);
 
         if (deliveryPoints.length === 0 && missionDelivery.length === 0) {
@@ -399,20 +504,19 @@ class Movement {
     }
 
     static #buildCacheKey(map, start, target, enemies) {
-
-        const enemyHash = this.#hashEnemies(enemies);
-
-        return [
+        const cacheKey = [
             `${start.x},${start.y}`,
             `${target.x},${target.y}`,
-            `v${map.version}`,
-            `e${enemyHash}`
+            `v${map.version}`
         ].join("|");
+        const enemyHash = this.#hashEnemies(enemies);
+
+        return {without : cacheKey, with: `${cacheKey}|${enemyHash}`};
     }
 
     static #getEnemyCells(enemies) {
         const cells = new Set();
-
+  
         for (const e of enemies) {
             const x1 = Math.floor(e.x);
             const x2 = Math.ceil(e.x);
@@ -436,8 +540,36 @@ class Movement {
         return cells;
     }
 
+    static #isPathStillValid(path, enemies) {
+        const enemySet = Movement.#getEnemyCells(enemies);
+
+        for (const node of path) {
+            if (enemySet.has(`${node.x},${node.y}`)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     static invalidateCacheMap() {
         this.#cache = new Map();
+    }
+
+    static buildDeliveryCache(map) {
+        this.#nearestDeliveryCache.clear();
+        const deliveryPoints = this.getDeliveryPoints(map);
+        for (let x = 0; x < map.width; x++) {
+            for (let y = 0; y < map.height; y++) {
+                if (map.tiles[x][y].toString() === '0') continue;
+                let best = null;
+                for (const dp of deliveryPoints) {
+                    const dist = this.getDistance(map, { x, y }, dp);
+                    if (!best || dist < best.distance) best = { ...dp, distance: dist };
+                }
+                if (best) this.#nearestDeliveryCache.set(`${x},${y}`, best);
+            }
+        }
     }
 }
 
