@@ -209,6 +209,8 @@ class Belief {
         if (!mission.persistent) this.thereIsAtomicMission = true; 
         if (mission.isNegative() && (mission.type === TYPE_MISSION.MOVE || mission.type === TYPE_MISSION.MOVEMENT_TILE)) {
             this.config.map.tiles[mission.args.x][mission.args.y] = '0';
+            this.config.map.version++;
+            Movement.invalidateCacheMap();
         }
         this.missions.push(mission);
     }

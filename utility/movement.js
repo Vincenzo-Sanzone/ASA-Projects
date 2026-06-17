@@ -3,6 +3,8 @@ import { GameMap, Logger, executeUntilDone, Strategy } from "./index.js";
 import { Belief } from "../bdi-agent/belief/belief.js";
 class Movement {
     static #spawnClusterCache = null;
+    static #cache = new Map();
+
     /**
      * 
      * @param {DjsClientSocket} socket - The socket connection. 
@@ -26,8 +28,8 @@ class Movement {
      */
     async moveTo(start, target, belief) {
         this.logger.agentName = belief.me.name
-        while (belief.isNeededReconsidering || belief.waiting) { 
-            if (this.stopped) return; 
+        while (belief.isNeededReconsidering || belief.waiting) {
+            if (this.stopped) return;
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
         if (this.stopped) return;
@@ -115,6 +117,13 @@ class Movement {
      * @returns 
      */
     static aStar(map, start, target, enemies = []) {
+        const cacheKey = this.#buildCacheKey(map, start, target, enemies);
+
+        if (this.#cache.has(cacheKey)) {
+            console.log("[DEBUG] Using cache", this.#cache.size);
+            return this.#cache.get(cacheKey);
+        }
+
         const width = map.width;
         const height = map.height;
 
@@ -156,11 +165,13 @@ class Movement {
             }
 
             if (!current) break;
-            
+
             const [cx, cy] = current.split(',').map(Number);
 
             if (cx === target.x && cy === target.y) {
-                return this.#reconstructPath(cameFrom, current);
+                const path = this.#reconstructPath(cameFrom, current);
+                this.#cache.set(cacheKey, path);
+                return path;
             }
 
             openSet.delete(current);
@@ -379,6 +390,55 @@ class Movement {
 
     static invalidateCache() {
         this.#spawnClusterCache = null;
+        this.invalidateCacheMap();
+    }
+
+    static #hashEnemies(enemies) {
+        const cells = this.#getEnemyCells(enemies);
+
+        return [...cells].sort().join("|");
+    }
+
+    static #buildCacheKey(map, start, target, enemies) {
+
+        const enemyHash = this.#hashEnemies(enemies);
+
+        return [
+            `${start.x},${start.y}`,
+            `${target.x},${target.y}`,
+            `v${map.version}`,
+            `e${enemyHash}`
+        ].join("|");
+    }
+
+    static #getEnemyCells(enemies) {
+        const cells = new Set();
+
+        for (const e of enemies) {
+            const x1 = Math.floor(e.x);
+            const x2 = Math.ceil(e.x);
+            const y1 = Math.floor(e.y);
+            const y2 = Math.ceil(e.y);
+
+            if (x1 === x2 && y1 === y2) {
+                cells.add(`${x1},${y1}`);
+                continue;
+            }
+            else if (x1 === x2) {
+                cells.add(`${x1},${y1}`);
+                cells.add(`${x1},${y2}`);
+                continue;
+            }
+
+            cells.add(`${x1},${y1}`);
+            cells.add(`${x2},${y1}`);
+        }
+
+        return cells;
+    }
+
+    static invalidateCacheMap() {
+        this.#cache = new Map();
     }
 }
 

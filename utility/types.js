@@ -47,6 +47,7 @@ class GameMap {
         this.width = maps.tiles.length;
         this.height = maps.tiles[0].length;
         this.tiles = maps.tiles;
+        this.version = 0;
     }
 
     printFullMap(){
