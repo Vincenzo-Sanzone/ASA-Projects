@@ -29,6 +29,7 @@ class BDIAgent {
 
     this.lastEventTime = Date.now();
     this.thinking = false;
+    this.thinkRequested = false;
   }
 
   #startSensing() {
@@ -101,7 +102,7 @@ class BDIAgent {
 
   requestThink() {
     this.lastEventTime = Date.now();
-    this.#think();
+    this.thinkRequested = true;
   }
 
   #startWatchdog() {
@@ -110,10 +111,10 @@ class BDIAgent {
 
       const idleTime = now - this.lastEventTime;
 
-      if (idleTime > 1000) {
+      if (this.thinkRequested && idleTime > 1000) {
         this.#think();
       }
-    }, 500);
+    }, 100);
   }
 
   #think() {

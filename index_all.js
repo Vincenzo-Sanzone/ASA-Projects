@@ -25,8 +25,12 @@ const llm = new LLMAgent(process.env.LLM_TOKEN, process.env.BDI_TOKEN);
 llm.startAgent();
 
 
-llm.bdi.socket.onceYou(() => deliveryCollaboration());
+
+llm.bdi.socket.onMap(() => deliveryCollaboration());
 async function deliveryCollaboration() {
+  // Sleep for 5 seconds
+  await new Promise(resolve => setTimeout(resolve, 5000));
+
   const deliveryCollaboration = new DeliveryCollaboration();
 
   deliveryCollaboration.addBelief(bdi.belief, { x: bdi.belief.me.x, y: bdi.belief.me.y }, { x: llm.bdi.belief.me.x, y: llm.bdi.belief.me.y });

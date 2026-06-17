@@ -13,6 +13,9 @@ class Desires {
      * @param {Belief} belief 
      */
     generateDesires(belief) {
+        if (belief.config === null) {
+            return
+        }
         if (belief.waiting) {
             return
         }
