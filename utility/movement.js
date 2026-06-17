@@ -116,209 +116,107 @@ class Movement {
      * @param {{x: number, y: number}} target 
      * @returns 
      */
-    static aStar(map, start, target, enemies = []) {
-        const cacheKey = this.#buildCacheKey(map, start, target, enemies);
-
-        const cachedPath = this.#cache.get(cacheKey.without);
-
-        if (cachedPath && Movement.#isPathStillValid(cachedPath, enemies)) {
-            return cachedPath;
-        } else if (this.#cache.has(cacheKey.with)) {
-            return this.#cache.get(cacheKey.with)
-        } else if (cachedPath) {
-            Movement.#aStarEnemies(map, start, target, enemies);
-            return this.#cache.get(cacheKey.with);
-        }
-
-        const width = map.width;
-        const height = map.height;
-
-        const key = (x, y) => `${x},${y}`;
-
-        const heuristic = (x, y) => {
-            // Manhattan distance (perfetta per griglia 4-direzioni)
-            return Math.abs(x - target.x) + Math.abs(y - target.y);
-        };
-
-        const directions = [
-            { dx: 0, dy: -1, forbiddenTile: '↑' },
-            { dx: 0, dy: 1, forbiddenTile: '↓' },
-            { dx: -1, dy: 0, forbiddenTile: '→' },
-            { dx: 1, dy: 0, forbiddenTile: '←' }
-        ];
-
-        const openSet = new Set([key(start.x, start.y)]);
-        const cameFrom = new Map();
-
-        const gScore = new Map();
-        const fScore = new Map();
-
-        gScore.set(key(start.x, start.y), 0);
-        fScore.set(key(start.x, start.y), heuristic(start.x, start.y));
-
-        while (openSet.size > 0) {
-
-            // trova nodo con fScore minimo
-            let current = null;
-            let bestF = Infinity;
-
-            for (const k of openSet) {
-                const f = fScore.get(k) ?? Infinity;
-                if (f < bestF) {
-                    bestF = f;
-                    current = k;
-                }
-            }
-
-            if (!current) break;
-
-            const [cx, cy] = current.split(',').map(Number);
-
-            if (cx === target.x && cy === target.y) {
-                const path = this.#reconstructPath(cameFrom, current);
-                this.#cache.set(cacheKey.without, path);
-                return path;
-            }
-
-            openSet.delete(current);
-
-            const currentG = gScore.get(current);
-
-            for (const { dx, dy, forbiddenTile } of directions) {
-
-                const nx = cx + dx;
-                const ny = cy + dy;
-                const nKey = key(nx, ny);
-
-                if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
-
-                const tile = map.tiles[nx][ny];
-
-                if (tile.toString() === '0') continue;
-
-                if (['↑', '↓', '→', '←'].includes(tile.toString()) && tile.toString() === forbiddenTile) continue;
-
-                const tentativeG = currentG + 1;
-
-                if (tentativeG < (gScore.get(nKey) ?? Infinity)) {
-
-                    cameFrom.set(nKey, current);
-
-                    gScore.set(nKey, tentativeG);
-                    fScore.set(nKey, tentativeG + heuristic(nx, ny));
-
-                    openSet.add(nKey);
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * 
-     * @param {GameMap} map 
-     * @param {{x: number, y: number}} start 
-     * @param {{x: number, y: number}} target 
-     * @returns 
-     */
-    static #aStarEnemies(map, start, target, enemies = []) {
-        const cacheKey = this.#buildCacheKey(map, start, target).with;
-
-        const width = map.width;
-        const height = map.height;
-
-        const key = (x, y) => `${x},${y}`;
-
-        const heuristic = (x, y) => {
-            // Manhattan distance (perfetta per griglia 4-direzioni)
-            return Math.abs(x - target.x) + Math.abs(y - target.y);
-        };
-
-        const directions = [
-            { dx: 0, dy: -1, forbiddenTile: '↑' },
-            { dx: 0, dy: 1, forbiddenTile: '↓' },
-            { dx: -1, dy: 0, forbiddenTile: '→' },
-            { dx: 1, dy: 0, forbiddenTile: '←' }
-        ];
-
-        const openSet = new Set([key(start.x, start.y)]);
-        const cameFrom = new Map();
-
-        const gScore = new Map();
-        const fScore = new Map();
-
-        gScore.set(key(start.x, start.y), 0);
-        fScore.set(key(start.x, start.y), heuristic(start.x, start.y));
-
-        while (openSet.size > 0) {
-
-            // trova nodo con fScore minimo
-            let current = null;
-            let bestF = Infinity;
-
-            for (const k of openSet) {
-                const f = fScore.get(k) ?? Infinity;
-                if (f < bestF) {
-                    bestF = f;
-                    current = k;
-                }
-            }
-
-            if (!current) break;
-
-            const [cx, cy] = current.split(',').map(Number);
-
-            if (cx === target.x && cy === target.y) {
-                const path = this.#reconstructPath(cameFrom, current);
-                this.#cache.set(cacheKey, path);
-                return path;
-            }
-
-            openSet.delete(current);
-
-            const currentG = gScore.get(current);
-
-            for (const { dx, dy, forbiddenTile } of directions) {
-
-                const nx = cx + dx;
-                const ny = cy + dy;
-                const nKey = key(nx, ny);
-
-                if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
-
-                const tile = map.tiles[nx][ny];
-
-                if (tile.toString() === '0') continue;
-                if (enemies) {
-                    let blocked = false;
-                    for (const enemy of enemies) {
-                        if (enemy.x % 1 !== 0 && (Math.floor(enemy.x) === nx || Math.ceil(enemy.x) === nx) && enemy.y === ny) blocked = true;
-                        if (enemy.y % 1 !== 0 && (Math.floor(enemy.y) === ny || Math.ceil(enemy.y) === ny) && enemy.x === nx) blocked = true;
-                        if (enemy.x === nx && enemy.y === ny) blocked = true;
-                        if (blocked) break;
-                    }
-                    if (blocked) continue;
-                }
-
-                if (['↑', '↓', '→', '←'].includes(tile.toString()) && tile.toString() === forbiddenTile) continue;
-
-                const tentativeG = currentG + 1;
-
-                if (tentativeG < (gScore.get(nKey) ?? Infinity)) {
-
-                    cameFrom.set(nKey, current);
-
-                    gScore.set(nKey, tentativeG);
-                    fScore.set(nKey, tentativeG + heuristic(nx, ny));
-
-                    openSet.add(nKey);
-                }
-            }
-        }
-
-        return null;
-    }
+    static aStar(map, start, target, enemies = []) { 
+        const cacheKey = this.#buildCacheKey(map, start, target, enemies); 
+ 
+        if (this.#cache.has(cacheKey)) { 
+            return this.#cache.get(cacheKey); 
+        } 
+ 
+        const width = map.width; 
+        const height = map.height; 
+ 
+        const key = (x, y) => `${x},${y}`; 
+ 
+        const heuristic = (x, y) => { 
+            // Manhattan distance (perfetta per griglia 4-direzioni) 
+            return Math.abs(x - target.x) + Math.abs(y - target.y); 
+        }; 
+ 
+        const directions = [ 
+            { dx: 0, dy: -1, forbiddenTile: '↑' }, 
+            { dx: 0, dy: 1, forbiddenTile: '↓' }, 
+            { dx: -1, dy: 0, forbiddenTile: '→' }, 
+            { dx: 1, dy: 0, forbiddenTile: '←' } 
+        ]; 
+ 
+        const openSet = new Set([key(start.x, start.y)]); 
+        const cameFrom = new Map(); 
+ 
+        const gScore = new Map(); 
+        const fScore = new Map(); 
+ 
+        gScore.set(key(start.x, start.y), 0); 
+        fScore.set(key(start.x, start.y), heuristic(start.x, start.y)); 
+ 
+        while (openSet.size > 0) { 
+ 
+            // trova nodo con fScore minimo 
+            let current = null; 
+            let bestF = Infinity; 
+ 
+            for (const k of openSet) { 
+                const f = fScore.get(k) ?? Infinity; 
+                if (f < bestF) { 
+                    bestF = f; 
+                    current = k; 
+                } 
+            } 
+ 
+            if (!current) break; 
+ 
+            const [cx, cy] = current.split(',').map(Number); 
+ 
+            if (cx === target.x && cy === target.y) { 
+                const path = this.#reconstructPath(cameFrom, current); 
+                this.#cache.set(cacheKey, path); 
+                return path; 
+            } 
+ 
+            openSet.delete(current); 
+ 
+            const currentG = gScore.get(current); 
+ 
+            for (const { dx, dy, forbiddenTile } of directions) { 
+ 
+                const nx = cx + dx; 
+                const ny = cy + dy; 
+                const nKey = key(nx, ny); 
+ 
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue; 
+ 
+                const tile = map.tiles[nx][ny]; 
+ 
+                if (tile.toString() === '0') continue; 
+                if (enemies) { 
+                    let blocked = false; 
+                    for (const enemy of enemies) { 
+                        if (enemy.x % 1 !== 0 && (Math.floor(enemy.x) === nx || Math.ceil(enemy.x) === nx) && enemy.y === ny) blocked = true; 
+                        if (enemy.y % 1 !== 0 && (Math.floor(enemy.y) === ny || Math.ceil(enemy.y) === ny) && enemy.x === nx) blocked = true; 
+                        if (enemy.x === nx && enemy.y === ny) blocked = true; 
+                        if (blocked) break; 
+                    } 
+                    if (blocked) continue; 
+                } 
+ 
+                if (['↑', '↓', '→', '←'].includes(tile.toString()) && tile.toString() === forbiddenTile) continue; 
+ 
+                const tentativeG = currentG + 1; 
+ 
+                if (tentativeG < (gScore.get(nKey) ?? Infinity)) { 
+ 
+                    cameFrom.set(nKey, current); 
+ 
+                    gScore.set(nKey, tentativeG); 
+                    fScore.set(nKey, tentativeG + heuristic(nx, ny)); 
+ 
+                    openSet.add(nKey); 
+                } 
+            } 
+        } 
+ 
+        return null; 
+    } 
 
     static #reconstructPath(cameFrom, current) {
         const path = [current];
@@ -515,16 +413,16 @@ class Movement {
         return [...cells].sort().join("|");
     }
 
-    static #buildCacheKey(map, start, target, enemies) {
-        const cacheKey = [
-            `${start.x},${start.y}`,
-            `${target.x},${target.y}`,
-            `v${map.version}`
-        ].join("|");
-        const enemyHash = this.#hashEnemies(enemies);
-
-        return { without: cacheKey, with: `${cacheKey}|${enemyHash}` };
-    }
+    static #buildCacheKey(map, start, target, enemies) { 
+        const enemyHash = this.#hashEnemies(enemies); 
+ 
+        return [ 
+            `${start.x},${start.y}`, 
+            `${target.x},${target.y}`, 
+            `v${map.version}`, 
+            `e${enemyHash}` 
+        ].join("|"); 
+    } 
 
     static #getEnemyCells(enemies) {
         const cells = new Set();
