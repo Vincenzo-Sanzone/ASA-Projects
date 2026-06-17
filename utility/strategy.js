@@ -180,9 +180,6 @@ class Strategy {
                 const tile = map.tiles[x][y];
                 if (!tile) continue;
 
-                const x = tile.x;
-                const y = tile.y;
-
                 // X filter
                 if (isXOdd !== null) {
                     const isOdd = x % 2 === 1;
