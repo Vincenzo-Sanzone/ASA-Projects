@@ -1,23 +1,11 @@
-# 1. Introduction
-The objective of this project is the development of a pair of cooperative autonomous agents able to operate in the Deliveroo environment. The agents must maximize the obtained reward by collecting and delivering parcels while adapting to dynamic missions introduced during the game.
-
-The proposed solution combines three paradigms:
-- Belief-Desire-Intention (BDI) architecture for reactive decision making.
-- Large Language Models (LLMs) for mission interpretation.
-- PDDL planning for complex coordination tasks.
-
-This combination allows agents to reason efficiently in dynamic environments while remaining flexible enough to interpret previously unseen mission descriptions.
-
----
-
-# 2. BDI
+# 1. BDI
 
 The core decision-making component of the system is implemented using a Belief-Desire-Intention (BDI) architecture. The agent continuously operates through a reasoning cycle that transforms perceptual input into structured beliefs, evaluates possible objectives, and selects the most suitable intention for execution.
 ![BDI Architecture](bdi.png)
 
 ---
 
-## 2.1 Belief
+## 1.1 Belief
 
 The belief base represents the agent’s internal model of the environment. It is continuously updated through perception events and communication messages.
 
@@ -35,7 +23,7 @@ The belief base is therefore not a static snapshot of the world, but a dynamic a
 
 ---
 
-## 2.2 Desire Generation
+## 1.2 Desire Generation
 
 At each reasoning cycle, the system generates a set of competing **desires**, each representing a potential objective the agent could pursue.
 
@@ -58,7 +46,7 @@ This mechanism allows all possible actions to be compared on a unified numerical
 
 ---
 
-## 2.3 Priority-Based Selection
+## 1.3 Priority-Based Selection
 
 Once generated, all desires compete through a priority-based evaluation function.
 
@@ -70,7 +58,7 @@ This approach results in a dynamic decision-making process where the agent’s b
 
 ---
 
-## 2.4 Intention Management and Revision
+## 1.4 Intention Management and Revision
 
 The intention layer represents the currently selected objective that the agent is actively pursuing.
 
@@ -90,7 +78,7 @@ This continuous revision mechanism ensures that the agent remains adaptive to ch
 
 ---
 
-## 2.5 Execution Layer (Plans)
+## 1.5 Execution Layer (Plans)
 
 Intentions are not executed directly. Instead, each intention is mapped to a corresponding plan in the plan library.
 
@@ -109,7 +97,7 @@ This separation between intentions and execution ensures modularity: the decisio
 
 ---
 
-## 2.6 Continuous Reasoning Cycle
+## 1.6 Continuous Reasoning Cycle
 
 The BDI system operates in a continuous loop triggered by:
 - perception events (sensing updates);
@@ -120,14 +108,14 @@ This ensures that the agent continuously re-evaluates its beliefs, desires, and 
 
 ---
 
-# 3. LLM
+# 2. LLM
 
 A key aspect of the system is the ability to interpret heterogeneous natural language inputs and convert them into structured internal representations. To achieve this, the architecture is designed as a layered cognitive pipeline that separates **intent recognition**, **mission classification**, and **tool selection**. This modular design allows the system to handle both actionable instructions and informational queries in a unified but structured manner.
 ![LLM Architecture](llm.png)
 
 ---
 
-## 3.1 Router: Intent Detection
+## 2.1 Router: Intent Detection
 
 The first stage of the pipeline is responsible for distinguishing between different types of input messages. Not all incoming messages correspond to executable tasks; some require reasoning or information retrieval rather than action execution.
 
@@ -150,11 +138,11 @@ This abstraction enables the system to maintain a clear distinction between deci
 
 ---
 
-## 3.2 Mission Classification
+## 2.2 Mission Classification
 
 Once an input is identified as a mission, it is further classified according to its complexity. Missions are divided into three levels:
 
-### 3.2.1 Classifier
+### 2.2.1 Classifier
 
 After an input has been identified as a mission, a second LLM-based component is responsible for determining the mission level. The objective of this classifier is to map a natural language description into one of the three mission categories: Atomic, Persistent, or Cooperative.
 
@@ -175,7 +163,7 @@ The classifier produces a structured output:
 ```
 
 
-### 3.2.2 Level Interpretation
+### 2.2.2 Level Interpretation
 
 Although missions are categorized into three levels (Atomic, Persistent, and Cooperative), the underlying processing architecture remains uniform across all cases. Each mission, regardless of its level, follows the same pipeline: it is interpreted by a dedicated LLM-based subsystem, converted into a structured JSON representation, and then transformed into a `Mission` object that is integrated into the BDI belief base.
 
@@ -193,7 +181,7 @@ Each subsystem uses a different prompt configuration and a different interpretat
 
 ---
 
-## 3.4 Cognitive Queries
+## 2.3 Cognitive Queries
 
 Not all inputs received by the system correspond to missions that require execution. Some messages are instead general-purpose questions that do not relate to the Deliveroo environment or to the agent's objectives. These inputs are classified as **Cognitive Queries**.
 
@@ -209,7 +197,7 @@ The LLM analyzes the request and generates a textual response without interactin
 
 ---
 
-## 3.5 Design Rationale and Advantages
+## 2.4 Design Rationale and Advantages
 
 The proposed cognitive architecture provides several key advantages.
 
@@ -228,12 +216,12 @@ Overall, the architecture can be interpreted as a multi-layer cognitive system i
 Unfortunately, with this approach, three calls are made to the LLM before a structured output is received, which causes the agent to experience significant latency due to the interaction with the LLM.
 
 ---
-# 4. PDDL
+# 3. PDDL
 
 While most agent behavior is governed by the reactive BDI architecture and A* pathfinding, PDDL is employed for specific reasoning tasks that require symbolic planning.
 
 ---
-## 4.1 Cooperative Map Detection
+## 3.1 Cooperative Map Detection
 
 At the beginning of each match, a PDDL model is generated from the map structure and the initial accessibility of relevant locations. The planner is used to determine whether parcels can be independently collected and delivered by each agent or whether cooperation is required. 
 
@@ -243,7 +231,7 @@ This preliminary analysis allows the agents to adapt their strategy to the topol
 
 ---
 
-## 4.2 Planning in Presence of Crates
+## 3.2 Planning in Presence of Crates
 
 The environment may contain movable crates that modify the traversability of the map. In these situations, standard graph-based pathfinding is insufficient because reachability depends on sequences of object manipulation actions.
 
@@ -259,14 +247,14 @@ The resulting plan is then translated into executable actions and integrated int
 
 ---
 
-## 4.3 Role of PDDL in the Architecture
+## 3.3 Role of PDDL in the Architecture
 
 PDDL is therefore not used as the primary decision-making mechanism. Instead, it acts as a complementary symbolic reasoning layer that is invoked only when purely reactive techniques are insufficient.
 
 The BDI architecture remains responsible for goal selection and execution management, while PDDL is used to solve structural planning problems involving environment accessibility and cooperation requirements.
 
 ---
-# 5. Coordination and Cooperation
+# 4. Coordination and Cooperation
 
 Agents coordinate through an explicit message-based communication protocol. Communication is used to share information, synchronize actions, and enable the execution of cooperative missions.
 
@@ -284,11 +272,11 @@ The communication layer is also used to support parcel handovers between agents.
 Overall, the coordination mechanism extends the capabilities of the individual BDI agents by allowing them to operate as a cooperative team rather than as independent entities.
 
 ---
-# 6. Start the project
+# 5. Start the project
 Please read the README file for instructions on how to start the project and for instructions on how to read the codebase.
 
 ---
-# 7. Known limits
+# 6. Known limits
 Due to computational and architectural constraints, the system exhibits reduced performance on large maps (approximately 40×40 or larger). In these scenarios, the increased state space negatively impacts pathfinding efficiency and leads to higher planning latency.
 
 Furthermore, the agents do not explicitly perform global dead-zone detection. As a result, in map configurations with constrained connectivity (e.g., maps with isolated regions or narrow corridors such as the _tree_ layout), agents may occasionally generate suboptimal trajectories or fail to efficiently avoid low-reward or inaccessible areas.
