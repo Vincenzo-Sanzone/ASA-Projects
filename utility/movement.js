@@ -120,7 +120,6 @@ class Movement {
         const cacheKey = this.#buildCacheKey(map, start, target, enemies);
 
         if (this.#cache.has(cacheKey)) {
-            console.log("[DEBUG] Using cache", this.#cache.size);
             return this.#cache.get(cacheKey);
         }
 
