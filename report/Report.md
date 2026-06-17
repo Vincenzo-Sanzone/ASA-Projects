@@ -280,3 +280,7 @@ A particularly important aspect of the coordination layer is the management of c
 The communication layer is also used to support parcel handovers between agents. When cooperation is required, one agent can collect a parcel while the second agent performs the final delivery. To enable this behavior, agents exchange coordination messages, agree on a meeting location, and synchronize the transfer procedure.
 
 Overall, the coordination mechanism extends the capabilities of the individual BDI agents by allowing them to operate as a cooperative team rather than as independent entities.
+
+---
+# 6. Start the project
+Please read the README file for instructions on how to start the project and for instructions on how to read the codebase.
