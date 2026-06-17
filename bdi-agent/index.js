@@ -46,7 +46,10 @@ class BDIAgent {
       this.requestThink();
     });
 
-    this.socket.onConfig((config) => { this.belief.updateConfig(config); });
+    this.socket.onConfig((config) => { 
+      this.belief.updateConfig(config);
+      Movement.buildDeliveryCache(config.GAME.map);
+    });
 
     this.socket.onMap(() => {
       Movement.invalidateCache();
