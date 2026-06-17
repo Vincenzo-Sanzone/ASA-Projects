@@ -27,15 +27,11 @@ class LookForParcelPlan extends Plan {
         const result = Strategy.getBestSpawnTile(this.intention.beliefs.config?.map, this.intention.beliefs.me, this.intention.beliefs.enemies);
 
         let x, y;
-        if (!result && this.intention.beliefs.crates.length === 0) {
-            const other =  Strategy.randomReachableTile(this.intention.beliefs.config?.map, this.intention.beliefs.me, this.intention.beliefs.enemies);
-            if (!other) return false;
-            x = other?.x
-            y = other?.y
-            this.logger.debug("No spawn tile found, moving to random reachable tile.");
-        }
-        else if (!result) {
-            return false;
+        if (!result) {
+            // Move in one random direction
+            const direction = Math.floor(Math.random() * 4);
+            x = this.intention.beliefs.me.x + (direction === 0 ? 1 : direction === 1 ? -1 : 0);
+            y = this.intention.beliefs.me.y + (direction === 2 ? 1 : direction === 3 ? -1 : 0);
         } 
         else {
             x = result?.x
