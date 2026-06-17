@@ -374,11 +374,23 @@ class Movement {
      * @returns {{x: number, y: number, distance: number}} The coordinates of the nearest delivery point and its distance.
      */
     static nearestDeliveryPoint(map, start, enemies = [], missionDelivery = []) {
+        const deliveryPoints = this.getDeliveryPoints(map);
 
-        if (enemies.length === 0 && missionDelivery.length === 0) {
+        if (enemies.length === 0 && missionDelivery.length === 0 && this.#nearestDeliveryCache.has(`${start.x},${start.y}`)) {
             return this.#nearestDeliveryCache.get(`${start.x},${start.y}`) ?? null;
         }
-        const deliveryPoints = this.getDeliveryPoints(map);
+        else if (enemies.length === 0 && missionDelivery.length === 0) {
+            const result = deliveryPoints.reduce((nearest, point) => {
+                const distance = this.getDistance(map, start, point);
+                if (!Number.isFinite(distance)) return nearest;
+                if (!nearest || distance < nearest.distance) {
+                    return { distance, x: point.x, y: point.y };
+                }
+                return nearest;
+            }, null);
+            this.#nearestDeliveryCache.set(`${start.x},${start.y}`, result);
+            return result;
+        }
 
         if (deliveryPoints.length === 0 && missionDelivery.length === 0) {
             return { distance: Infinity, x: null, y: null };
@@ -511,12 +523,12 @@ class Movement {
         ].join("|");
         const enemyHash = this.#hashEnemies(enemies);
 
-        return {without : cacheKey, with: `${cacheKey}|${enemyHash}`};
+        return { without: cacheKey, with: `${cacheKey}|${enemyHash}` };
     }
 
     static #getEnemyCells(enemies) {
         const cells = new Set();
-  
+
         for (const e of enemies) {
             const x1 = Math.floor(e.x);
             const x2 = Math.ceil(e.x);
@@ -554,22 +566,7 @@ class Movement {
 
     static invalidateCacheMap() {
         this.#cache = new Map();
-    }
-
-    static buildDeliveryCache(map) {
-        this.#nearestDeliveryCache.clear();
-        const deliveryPoints = this.getDeliveryPoints(map);
-        for (let x = 0; x < map.width; x++) {
-            for (let y = 0; y < map.height; y++) {
-                if (map.tiles[x][y].toString() === '0') continue;
-                let best = null;
-                for (const dp of deliveryPoints) {
-                    const dist = this.getDistance(map, { x, y }, dp);
-                    if (!best || dist < best.distance) best = { ...dp, distance: dist };
-                }
-                if (best) this.#nearestDeliveryCache.set(`${x},${y}`, best);
-            }
-        }
+        this.#nearestDeliveryCache = new Map();
     }
 }
 

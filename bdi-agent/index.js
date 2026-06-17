@@ -48,7 +48,6 @@ class BDIAgent {
 
     this.socket.onConfig((config) => { 
       this.belief.updateConfig(config);
-      Movement.buildDeliveryCache(config.GAME.map);
     });
 
     this.socket.onMap(() => {
