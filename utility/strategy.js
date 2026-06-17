@@ -88,6 +88,24 @@ class Strategy {
             }
         }
 
+        if (!best) {
+            for (const cluster of clusters) {
+
+                // Score based on delivery potential: how many parcels could be in this cluster and how close it is to delivery points
+                const deliveryScore = Strategy.#scoreDelivery(cluster);
+
+                // Score based on exploration potential: how many new tiles could we explore by going to this cluster and how far it is from other clusters (to maximize coverage)
+                const explorationScore = Strategy.#scoreExploration(cluster, clustersRaw, map, enemies);
+
+                const score = !useDeliveryScore ? deliveryScore : explorationScore;
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = cluster;
+                }
+            }
+        };
+
         if (!best) return null;
 
         // entry tile
@@ -258,7 +276,7 @@ class Strategy {
                 if (!Number.isFinite(distanceFromMe) || !Number.isFinite(distanceFromTeammate)) continue;
 
                 const score = Math.max(distanceFromMe, distanceFromTeammate);
-                
+
                 if (score < bestScore) {
                     bestScore = score;
                     bestTile = { x, y };
@@ -328,10 +346,11 @@ class Strategy {
 
         const nearestDeliveryDistances = cluster.map(t => {
             const nearestDeliveryPoint = Movement.nearestDeliveryPoint(map, t);
-            
+
             if (nearestDeliveryPoint === null) return Infinity;
-            
-            Movement.getDistance(map, t, nearestDeliveryPoint, enemies)}
+
+            Movement.getDistance(map, t, nearestDeliveryPoint, enemies)
+        }
         );
 
         const minDistanceToDelivery = Math.min(...nearestDeliveryDistances);
