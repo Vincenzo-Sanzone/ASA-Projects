@@ -20,13 +20,11 @@ class LLMAgent {
     }
 
     #listenToMessages() {
-        this.bdi.socket.onMsg((id, name, msg) => { this.messages.push(id, name, msg); })
+        this.bdi.socket.onMsg((id, name, msg) => { this.messages.push([id, name, msg]); })
         setInterval(() => {
             if (this.messages.length > 0) {
-                const id = this.messages.shift();
-                const name = this.messages.shift();
                 const msg = this.messages.shift(); 
-                this.handler.handleMessage(id, name, msg);
+                this.handler.handleMessage(msg[0], msg[1], msg[2]);
             }
         }, 100);
     }

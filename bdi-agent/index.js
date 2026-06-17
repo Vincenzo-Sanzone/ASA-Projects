@@ -119,10 +119,8 @@ class BDIAgent {
         this.#think();
       }
       if (this.messages.length > 0) {
-        const id = this.messages.shift();
-        const name = this.messages.shift();
         const msg = this.messages.shift();
-        this.handleMessage(id, name, msg);
+        this.handleMessage(msg[0], msg[1], msg[2]);
       }
     }, 100);
   }
