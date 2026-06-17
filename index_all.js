@@ -56,7 +56,6 @@ async function deliveryCollaboration() {
   deliveryCollaboration.addBelief(bdi.belief, { x: bdi.belief.me.x, y: bdi.belief.me.y }, { x: llm.bdi.belief.me.x, y: llm.bdi.belief.me.y });
   deliveryCollaboration.addGoal();
   const plan = await deliveryCollaboration.solve();
-  originalConsoleLog(plan? "Found plan" : 'No plan found');
   if (!plan) {
     bdi.belief.collaborationRequired = true
     llm.bdi.belief.collaborationRequired = true

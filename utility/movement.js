@@ -129,7 +129,6 @@ class Movement {
         const key = (x, y) => `${x},${y}`; 
  
         const heuristic = (x, y) => { 
-            // Manhattan distance (perfetta per griglia 4-direzioni) 
             return Math.abs(x - target.x) + Math.abs(y - target.y); 
         }; 
  
@@ -151,7 +150,6 @@ class Movement {
  
         while (openSet.size > 0) { 
  
-            // trova nodo con fScore minimo 
             let current = null; 
             let bestF = Infinity; 
  
@@ -448,18 +446,6 @@ class Movement {
         }
 
         return cells;
-    }
-
-    static #isPathStillValid(path, enemies) {
-        const enemySet = Movement.#getEnemyCells(enemies);
-
-        for (const node of path) {
-            if (enemySet.has(`${node.x},${node.y}`)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     static invalidateCacheMap() {

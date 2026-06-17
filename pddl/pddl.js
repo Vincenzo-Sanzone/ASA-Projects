@@ -1,5 +1,5 @@
 import path from 'path';
-import { readFile, Logger, saveFile, executeUntilDone } from '../utility/index.js';
+import { readFile, Logger, executeUntilDone } from '../utility/index.js';
 import { onlineSolver, PddlExecutor, PddlProblem, Beliefset } from "@unitn-asa/pddl-client";
 
 
@@ -47,8 +47,6 @@ class Pddl {
 
         // Replace all default with chosen plan
         this.problem = this.problem.replace(/default/g, this.chosenPlan);
-
-        saveFile(path.join('pddl', 'problems', 'debug', `${this.chosenPlan}.pddl`), this.problem)
     }
 
     /**
