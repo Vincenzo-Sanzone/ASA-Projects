@@ -286,3 +286,13 @@ Overall, the coordination mechanism extends the capabilities of the individual B
 ---
 # 6. Start the project
 Please read the README file for instructions on how to start the project and for instructions on how to read the codebase.
+
+---
+# 7. Known limits
+Due to computational and architectural constraints, the system exhibits reduced performance on large maps (approximately 40×40 or larger). In these scenarios, the increased state space negatively impacts pathfinding efficiency and leads to higher planning latency.
+
+Furthermore, the agents do not explicitly perform global dead-zone detection. As a result, in map configurations with constrained connectivity (e.g., maps with isolated regions or narrow corridors such as the _tree_ layout), agents may occasionally generate suboptimal trajectories or fail to efficiently avoid low-reward or inaccessible areas.
+
+In environments containing crates, performance initially degrades due to cold-start conditions in the pddl cache. However, as the cache becomes populated with frequently used paths and environmental queries, execution speed improves significantly over time.
+
+Additionally, although the system is designed in a multi-agent setting, the two agents operate largely independently. Despite being teammates, they do not rely on an explicit cooperative strategy beyond minimal message exchange. As a consequence, their behavior can be locally competitive or loosely coordinated, effectively resembling non-cooperative agents in several scenarios.
