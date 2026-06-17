@@ -225,6 +225,8 @@ Finally, this layered approach improves debugging and interpretability. Every de
 
 Overall, the architecture can be interpreted as a multi-layer cognitive system in which language understanding, reasoning, coordination, and execution are clearly separated but connected through shared structured representations.
 
+Unfortunately, with this approach, three calls are made to the LLM before a structured output is received, which causes the agent to experience significant latency due to the interaction with the LLM.
+
 ---
 # 4. PDDL
 
