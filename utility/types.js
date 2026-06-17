@@ -7,8 +7,7 @@ class Agent {
         this.name = sensedAgent.name;
         this.x = sensedAgent.x;
         this.y = sensedAgent.y;
-        this.timestampSeen = Date.now();
-        this.last = last
+        this.last = {x: last?.x, y: last?.y};
     }
 }
 
