@@ -25,9 +25,29 @@ const llm = new LLMAgent(process.env.LLM_TOKEN, process.env.BDI_TOKEN);
 llm.startAgent();
 
 
+let mapReady = false;
+let mapReadyPromise = null;
 
-llm.bdi.socket.onMap(() => deliveryCollaboration());
+deliveryCollaboration();
+
+function waitForMap() {
+  if (mapReady) return Promise.resolve();
+
+  if (!mapReadyPromise) {
+    mapReadyPromise = new Promise(resolve => {
+      llm.bdi.socket.onMap(() => {
+        mapReady = true;
+        resolve();
+      });
+    });
+  }
+
+  return mapReadyPromise;
+}
+
 async function deliveryCollaboration() {
+  await waitForMap();
+
   // Sleep for 5 seconds
   await new Promise(resolve => setTimeout(resolve, 5000));
 
