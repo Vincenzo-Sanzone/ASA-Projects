@@ -112,6 +112,7 @@ class BDIAgent {
       const idleTime = now - this.lastEventTime;
 
       if (this.thinkRequested && idleTime > 1000) {
+        this.thinkRequested = false;
         this.#think();
       }
     }, 100);

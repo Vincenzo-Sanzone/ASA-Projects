@@ -12,6 +12,7 @@ class Coordinator {
 
         this.lastSent = null;
         this.lastType = null;
+        this.lastMeSent = null;
 
         this.logger = new Logger("Coordinator:", agentName);
     }
@@ -22,13 +23,26 @@ class Coordinator {
             const result = await this.socket.emitSay(this.teammateId, msg);
             if (result === "failed") this.logger.error("Failed to send message to teammate", msg);
             else this.logger.debug("Message sent to teammate", msg);
-            this.lastSent = new Date();
-            this.lastType = asJSON.type;
+            if (asJSON.type === "me") this.lastMeSent = new Date();
+            else {
+                this.lastSent = new Date();
+                this.lastType = asJSON.type;
+            }
         }
     }
 
     #canSend(msg) {
-        return this.lastSent === null || new Date() - this.lastSent > 1000 || this.lastType !== msg.type;
+        const now = Date.now();
+
+        const isSameType = this.lastType === msg.type;
+        const timeSinceLast = now - (this.lastSent ?? 0);
+        const timeSinceMe = now - (this.lastMeSent ?? 0);
+
+        if (msg.type === "me") {
+            return this.lastMeSent === null || timeSinceMe > 5000;
+        }
+
+        return this.lastSent === null || timeSinceLast > 1000 || !isSameType;
     }
 
     /**
